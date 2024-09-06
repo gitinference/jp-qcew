@@ -17,14 +17,14 @@ class cleanData:
                 continue
             else:
                 for file in os.listdir('data/raw/' + folder):
-                    if os.path.exists('data/processed/' + file + '.csv',):
+                    if os.path.exists('data/processed/' + file + '.csv'):
                         continue
                     else:
                         df = self.clean_txt('data/raw/' + folder + '/' + file)
                         cleaned_df = pd.concat([cleaned_df, df])
                         print('Processed '+ folder + '_' + str(count))
                         count += 1
-        return cleaned_df
+        cleaned_df.to_csv('data/processed/cleaned_data.csv', index=False)
 
     def process_line(self, line):
         temp_df = []

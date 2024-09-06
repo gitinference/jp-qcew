@@ -1,0 +1,486 @@
+{
+  "trans_code": {
+    "position": 1,
+    "length": 1
+  },
+  "state_fips": {
+    "position": 2,
+    "length": 2
+  },
+  "year": {
+    "position": 4,
+    "length": 4
+  },
+  "qtr": {
+    "position": 8,
+    "length": 1
+  },
+  "ui_code": {
+    "position": 9,
+    "length": 10
+  },
+  "rep_uni_id": {
+    "position": 19,
+    "length": 5
+  },
+  "ein": {
+    "position": 24,
+    "length": 9
+  },
+  "pre_ui_code": {
+    "position": 33,
+    "length": 10
+  },
+  "pre_rep_uni_id": {
+    "position": 43,
+    "length": 5
+  },
+  "suc_ui_code": {
+    "position": 48,
+    "length": 10
+  },
+  "suc_rep_uni_id": {
+    "position": 58,
+    "length": 5
+  },
+  "leg_corp_name": {
+    "position": 63,
+    "length": 35
+  },
+  "trade_name": {
+    "position": 98,
+    "length": 35
+  },
+  "ui_str_addr_1": {
+    "position": 133,
+    "length": 35
+  },
+  "ui_str_addr_2": {
+    "position": 168,
+    "length": 35
+  },
+  "ui_addr_city": {
+    "position": 203,
+    "length": 30
+  },
+  "ui_addr_state": {
+    "position": 233,
+    "length": 2
+  },
+  "ui_addr_5_zip": {
+    "position": 235,
+    "length": 5
+  },
+  "ui_addr_zip_ext": {
+    "position": 240,
+    "length": 4
+  },
+  "phys_str_addr_1": {
+    "position": 244,
+    "length": 35
+  },
+  "phys_str_addr_2": {
+    "position": 279,
+    "length": 35
+  },
+  "phys_addr_city": {
+    "position": 314,
+    "length": 30
+  },
+  "phys_addr_state": {
+    "position": 344,
+    "length": 2
+  },
+  "phys_addr_5_zip": {
+    "position": 346,
+    "length": 5
+  },
+  "phys_addr_zip_ext": {
+    "position": 351,
+    "length": 4
+  },
+  "mail_str_addr_1": {
+    "position": 355,
+    "length": 35
+  },
+  "mail_str_addr_2": {
+    "position": 390,
+    "length": 35
+  },
+  "mail_addr_city": {
+    "position": 425,
+    "length": 30
+  },
+  "mail_addr_state": {
+    "position": 455,
+    "length": 2
+  },
+  "mail_addr_5_zip": {
+    "position": 457,
+    "length": 5
+  },
+  "mail_addr_zip_ext": {
+    "position": 462,
+    "length": 4
+  },
+  "mail_addr_type": {
+    "position": 466,
+    "length": 1
+  },
+  "rep_unit_desc": {
+    "position": 467,
+    "length": 35
+  },
+  "area_code": {
+    "position": 502,
+    "length": 3
+  },
+  "phone_prefix": {
+    "position": 505,
+    "length": 3
+  },
+  "phone_suffix": {
+    "position": 508,
+    "length": 4
+  },
+  "setup_date_year": {
+    "position": 512,
+    "length": 4
+  },
+  "setup_date_month": {
+    "position": 516,
+    "length": 2
+  },
+  "setup_date_day": {
+    "position": 518,
+    "length": 2
+  },
+  "init_liab_year": {
+    "position": 520,
+    "length": 4
+  },
+  "init_liab_month": {
+    "position": 524,
+    "length": 2
+  },
+  "init_liab_day": {
+    "position": 526,
+    "length": 2
+  },
+  "end_liab_year": {
+    "position": 528,
+    "length": 4
+  },
+  "end_liab_month": {
+    "position": 532,
+    "length": 2
+  },
+  "end_liab_day": {
+    "position": 534,
+    "length": 2
+  },
+  "reactivate_date_year": {
+    "position": 536,
+    "length": 4
+  },
+  "reactivate_date_month": {
+    "position": 540,
+    "length": 2
+  },
+  "reactivate_date_day": {
+    "position": 542,
+    "length": 2
+  },
+  "status_code": {
+    "position": 544,
+    "length": 1
+  },
+  "ces_indicator": {
+    "position": 545,
+    "length": 1
+  },
+  "ars_resp_code": {
+    "position": 546,
+    "length": 2
+  },
+  "ars_refile_year": {
+    "position": 548,
+    "length": 4
+  },
+  "old_country_code": {
+    "position": 552,
+    "length": 3
+  },
+  "old_own_code": {
+    "position": 555,
+    "length": 1
+  },
+  "ars_verif_code": {
+    "position": 556,
+    "length": 4
+  },
+  "old_town_code": {
+    "position": 560,
+    "length": 3
+  },
+  "max_rep_uni_num": {
+    "position": 563,
+    "length": 5
+  },
+  "mwr_mail_indicator": {
+    "position": 568,
+    "length": 1
+  },
+  "old_naics_code": {
+    "position": 569,
+    "length": 6
+  },
+  "data_source": {
+    "position": 575,
+    "length": 1
+  },
+  "special_indic_code": {
+    "position": 576,
+    "length": 1
+  },
+  "agent_code": {
+    "position": 577,
+    "length": 4
+  },
+  "sic_code": {
+    "position": 581,
+    "length": 4
+  },
+  "nsta_code": {
+    "position": 585,
+    "length": 6
+  },
+  "naics_code": {
+    "position": 591,
+    "length": 6
+  },
+  "own_code": {
+    "position": 597,
+    "length": 1
+  },
+  "org_type_code": {
+    "position": 598,
+    "length": 1
+  },
+  "counrty_code": {
+    "position": 599,
+    "length": 3
+  },
+  "town_code": {
+    "position": 602,
+    "length": 3
+  },
+  "aux_code": {
+    "position": 605,
+    "length": 1
+  },
+  "first_month_employment": {
+    "position": 606,
+    "length": 6
+  },
+  "first_month_employment_indic": {
+    "position": 612,
+    "length": 1
+  },
+  "second_month_employment": {
+    "position": 613,
+    "length": 6
+  },
+  "second_month_employment_indic": {
+    "position": 619,
+    "length": 1
+  },
+  "third_month_employment": {
+    "position": 620,
+    "length": 6
+  },
+  "third_month_employment_indic": {
+    "position": 626,
+    "length": 1
+  },
+  "total_wages": {
+    "position": 627,
+    "length": 11
+  },
+  "total_wages_indic": {
+    "position": 638,
+    "length": 1
+  },
+  "taxable_wages": {
+    "position": 639,
+    "length": 11
+  },
+  "contributions_due": {
+    "position": 650,
+    "length": 9
+  },
+  "type_coverage_code": {
+    "position": 659,
+    "length": 1
+  },
+  "meei_code": {
+    "position": 660,
+    "length": 1
+  },
+  "report_change_indic": {
+    "position": 661,
+    "length": 1
+  },
+  "firt_comment": {
+    "position": 662,
+    "length": 2
+  },
+  "second_comment": {
+    "position": 664,
+    "length": 2
+  },
+  "third_comment": {
+    "position": 666,
+    "length": 2
+  },
+  "narrative_comment": {
+    "position": 668,
+    "length": 57
+  },
+  "collect_mod_indic": {
+    "position": 725,
+    "length": 2
+  },
+  "econ_code_change_indic": {
+    "position": 727,
+    "length": 2
+  },
+  "ui_addr_type": {
+    "position": 729,
+    "length": 1
+  },
+  "date_pla_change": {
+    "position": 730,
+    "length": 8
+  },
+  "geo_soft_a": {
+    "position": 738,
+    "length": 1
+  },
+  "geo_soft_b": {
+    "position": 739,
+    "length": 1
+  },
+  "match_code": {
+    "position": 740,
+    "length": 4
+  },
+  "loc_code": {
+    "position": 744,
+    "length": 3
+  },
+  "latitude": {
+    "position": 747,
+    "length": 9
+  },
+  "longitude": {
+    "position": 756,
+    "length": 11
+  },
+  "year_qtr_new_lat_long": {
+    "position": 767,
+    "length": 5
+  },
+  "place_code": {
+    "position": 772,
+    "length": 5
+  },
+  "class_code": {
+    "position": 777,
+    "length": 2
+  },
+  "census_block": {
+    "position": 779,
+    "length": 15
+  },
+  "census_tract": {
+    "position": 794,
+    "length": 4
+  },
+  "addr/cont": {
+    "position": 798,
+    "length": 1
+  },
+  "p/s_part/full_indic": {
+    "position": 799,
+    "length": 1
+  },
+  "p/s_transfer_year": {
+    "position": 800,
+    "length": 4
+  },
+  "p/s_transfer_month": {
+    "position": 804,
+    "length": 2
+  },
+  "p/s_transfer_day": {
+    "position": 806,
+    "length": 2
+  },
+  "mult_suc": {
+    "position": 808,
+    "length": 1
+  },
+  "mult_pre": {
+    "position": 809,
+    "length": 1
+  },
+  "pre_source_code": {
+    "position": 810,
+    "length": 1
+  },
+  "suc_source_code": {
+    "position": 811,
+    "length": 1
+  },
+  "first_suppl_pre/suc": {
+    "position": 812,
+    "length": 16
+  },
+  "second_suppl_pre/suc": {
+    "position": 828,
+    "length": 16
+  },
+  "ars_third_party_agent": {
+    "position": 844,
+    "length": 1
+  },
+  "phone_ext": {
+    "position": 845,
+    "length": 5
+  },
+  "qcew_contact": {
+    "position": 850,
+    "length": 35
+  },
+  "qcew_contact_title": {
+    "position": 885,
+    "length": 35
+  },
+  "qcew_contact_email": {
+    "position": 920,
+    "length": 60
+  },
+  "qcew_contact_fax": {
+    "position": 980,
+    "length": 10
+  },
+  "qcew_contact_website": {
+    "position": 990,
+    "length": 60
+  },
+  "future_use": {
+    "position": 1050,
+    "length": 11
+  }
+}
