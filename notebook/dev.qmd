@@ -1,0 +1,23 @@
+---
+title: "Graph development"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+```{python}
+import os 
+os.chdir('..')
+```
+
+```{python}
+import polars as pl
+```
+
+```{python}
+df = pl.read_parquet('data/processed/cleaned_data.parquet')
+df 
+```
+
+
