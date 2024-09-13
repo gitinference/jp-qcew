@@ -31,10 +31,6 @@ class cleanData:
         temp_df = []
         for key in self.decode_file:
             data = line[self.decode_file[key]['position']-1: self.decode_file[key]['position'] + self.decode_file[key]['length']-1]
-            try:
-                data = data.decode('utf-8')
-            except UnicodeDecodeError:
-                pass
             data = data.strip()
             temp_df.append(data)
         return temp_df
