@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-import pandas as pd
+import polars as pl
 import json
 import os
 import polars as pl
@@ -11,7 +11,7 @@ class cleanData:
 
     def make_dataset(self):
 
-        cleaned_df = pd.DataFrame(columns=self.decode_file.keys())
+        cleaned_df = pl.DataFrame(columns=self.decode_file.keys())
         for folder in os.listdir(self.data_dir):
             count = 0
             if folder == '.gitkeep':
@@ -22,8 +22,8 @@ class cleanData:
                         continue
                     else:
                         df = self.clean_txt('data/raw/' + folder + '/' + file)
-                        cleaned_df = pd.concat([cleaned_df, df])
-                        print('Processed '+ folder + '_' + str(count))
+                        cleaned_df = cleaned_df.vstack(df)
+                        print(f'Processed {folder}_{count}')
                         count += 1
         cleaned_df.to_parquet('data/processed/cleaned_data.parquet', index=False)
 
@@ -36,11 +36,17 @@ class cleanData:
         return temp_df
 
     def clean_txt(self, dev_file):
-        df = pd.DataFrame(columns=self.decode_file.keys())
+        # Create an empty Polars DataFrame
+        df = pl.DataFrame({key: [] for key in self.decode_file.keys()})
+        
+        # Use ThreadPoolExecutor to process lines
         with ThreadPoolExecutor() as executor:
             lines = [line for line in open(dev_file, 'rb')]
             results = list(executor.map(self.process_line, lines))
-        df = pd.concat([df, pd.DataFrame(results, columns=self.decode_file.keys())])
+        
+        # Concatenate the results to the DataFrame
+        df = df.vstack(pl.DataFrame(results, schema=self.decode_file))
+        
         return df
     
     def group_by_naics_code(self):
