@@ -165,3 +165,12 @@ cython_debug/
 data/raw/
 data/processed/
 data/external/
+
+# ignore mac files
+*.DS_Store
+
+# ignore quarter files 
+notebooks/*
+!notebooks/*.qmd
+# vscode
+.vscode
