@@ -165,3 +165,7 @@ cython_debug/
 data/raw/
 data/processed/
 data/external/
+
+# ignore qmd stuff
+/notebooks/*
+!/notebooks/*.qmd
