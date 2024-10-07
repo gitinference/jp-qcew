@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import json
 import os
+import polars as pl
 
 class cleanData:
     def __init__(self, decode_path:str):
@@ -45,3 +46,21 @@ class cleanData:
             results = list(executor.map(self.process_line, lines))
         df = pd.concat([df, pd.DataFrame(results, columns=self.decode_file.keys())])
         return df
+    
+    def group_by_naics_code(self):
+        df = pl.read_csv("data/processed/master_df.csv", ignore_errors=True)
+        
+        # Create new column total_employment with the avg sum of (first_month_employment, second_month_employment and third_month_employment)
+        df = df.with_columns(
+        ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
+        )
+        # Select the colums (total_wages, year, qtr, naics_code and total_employment) 
+        df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment"))
+        # New column with the first 4 digits of the naics_code
+        new_df_pd = df.with_columns(
+        pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code")
+        )
+        # Sum of the total_wages and total_employment to have the total_wages_sum column
+        grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg((
+            pl.col("total_wages") + pl.col("total_employment")).alias("total_wages_sum")
+        )
