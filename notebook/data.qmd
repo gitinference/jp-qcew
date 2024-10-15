@@ -1,0 +1,58 @@
+---
+title: "data processing"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+```{python}
+import os
+os.chdir("..")
+```
+
+```{python}
+import polars as pl
+```
+
+```{python}
+# df = pl.read_csv("data/processed/2005_3.csv")
+
+df = pl.read_csv("data/processed/master_df.csv", ignore_errors=True)
+
+print(df)
+
+
+
+# ------------------------
+df = df.with_columns(
+  ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
+
+)
+df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment"))
+print(df)
+
+new_df_pd = df.with_columns(
+  pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"),
+  dummy=1
+  
+)
+
+
+grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg((
+            pl.col("total_wages") + pl.col("total_employment")).alias("total_wages_sum"), pl.col("dummy").sum().alias("dummy")
+        )
+
+grouped_df = grouped_df.filter(pl.col("dummy") > 4)
+
+print("Updated DataFrame with new total_wages:")
+
+print(grouped_df)
+
+
+
+# ------------------------
+
+
+
+```
