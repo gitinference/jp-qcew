@@ -1,0 +1,87 @@
+---
+title: "Graph development"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+```{python}
+import os 
+os.chdir('..')
+```
+
+```{python}
+import polars as pl
+import json
+from concurrent.futures import ThreadPoolExecutor
+```
+
+```{python}
+line = "F7220142000000000100000720564834                              U S DEPARTMENT OF AGRICULTURE      US DEPARTMENT OF AGRICULTURE       PO BOX 60000                                                          NEW ORLEANS                   LA701600001                                                                                                                                                                                                                                                                  20000000001957010119570101                1       1271    00000350 926140C               9261401 900000 000522S000509S000511S00007763030S0000000000000000000092                                                                00003                                                                              NN                                        LISTADO DE AGRICULTURA-U.S.                                                                                                                                                                                        "
+decode_file = json.load(open("data/external/decode.json"))
+```
+
+```{python}
+def process_line(line):
+    temp_df = []
+    for key in decode_file:
+        data = line[decode_file[key]['position'] - 1: decode_file[key]['position'] + decode_file[key]['length'] - 1]
+        data = data.strip()
+        try:
+            data = data.encode('utf-8').decode('utf-8')
+        except UnicodeDecodeError:
+            data = data.encode('utf-8', 'replace').decode('utf-8')
+        temp_df.append(pl.Series(f"{key}", [data]))
+    return pl.DataFrame(temp_df).lazy()
+
+```
+
+```{python}
+process_line(line).collect()
+```
+
+```{python}
+def clean_txt(dev_file):
+    df = pl.DataFrame({key: [] for key in decode_file.keys()}).cast(pl.String)
+    
+    # Read lines from the file
+    with open(dev_file, "r", encoding='utf-8', errors='replace') as f:
+        lines = f.readlines()
+
+    # Use ProcessPoolExecutor to process lines in parallel
+    with ProcessPoolExecutor() as executor:
+        # Submit all lines for processing
+        futures = {executor.submit(process_line, line): line for line in lines}
+        
+        # Collect results as they complete
+        results = []
+        for future in as_completed(futures):
+            processed_data = future.result()
+            results.append(processed_data)
+
+    # Concatenate all results into a single DataFrame
+    for processed_data in results:
+        df = pl.concat([df, pl.DataFrame(processed_data).cast(pl.String)], how="vertical")
+
+    return pl.DataFrame(df).lazy()
+
+```
+
+```{python}
+df_main = pl.DataFrame({key: [] for key in decode_file.keys()}).lazy().cast(pl.String)
+with open("data/raw/2006/A145.JOB021C.FILE.PR062", "r", encoding='latin1') as f:
+    lines = f.readlines()  # Read all lines at once
+
+# Use ThreadPoolExecutor to process lines in parallel
+with ThreadPoolExecutor() as executor:
+    # Submit tasks to the executor
+    futures = [executor.submit(process_line, line) for line in lines]
+    
+    # Collect results and concatenate
+    results = [future.result() for future in futures]
+    df_main = pl.concat(results, how="vertical")
+
+# Collect the final DataFrame
+final_df = df_main.collect()
+```
