@@ -21,9 +21,10 @@ class cleanData:
                     if os.path.exists('data/processed/' + file + '.parquet'):
                         continue
                     else:
-                        df = self.clean_txt('data/raw/' + folder + '/' + file)
-                        cleaned_df = cleaned_df.vstack(df)
-                        print(f'Processed {folder}_{count}')
+                        df = self.clean_txt(f"data/raw/{folder}/{file}")
+                        df["source_file"] = f"{folder}-{str(count)}"
+                        cleaned_df = pd.concat([cleaned_df, df])
+                        print('Processed '+ folder + '_' + str(count))
                         count += 1
         cleaned_df.to_parquet('data/processed/cleaned_data.parquet', index=False)
 
