@@ -62,8 +62,10 @@ class cleanData:
         dummy=1
         )
         # Sum of the total_wages and total_employment to have the total_wages_sum column
-        grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg((
-            pl.col("total_wages") + pl.col("total_employment")).alias("total_wages_sum"), pl.col("dummy").sum().alias("dummy")
+        grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg(
+            pl.col("total_wages").sum().alias("total_wages_sum"),
+            pl.col("total_employment").sum().alias("total_employment_sum"),
+            pl.col("dummy").sum().alias("dummy")
         )
 
         grouped_df = grouped_df.filter(pl.col("dummy") > 4)

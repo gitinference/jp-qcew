@@ -39,9 +39,11 @@ new_df_pd = df.with_columns(
 )
 
 
-grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg((
-            pl.col("total_wages") + pl.col("total_employment")).alias("total_wages_sum"), pl.col("dummy").sum().alias("dummy")
-        )
+grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg(
+    pl.col("total_wages").sum().alias("total_wages_sum"),
+    pl.col("total_employment").sum().alias("total_employment_sum"),
+    pl.col("dummy").sum().alias("dummy")
+)
 
 grouped_df = grouped_df.filter(pl.col("dummy") > 4)
 
