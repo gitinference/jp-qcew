@@ -51,14 +51,14 @@ class cleanData:
         return df
     
     def group_by_naics_code(self):
-        df = pl.read_csv("data/processed/master_df.csv", ignore_errors=True)
+        df = pl.read_csv("data/processed/cleaned_data.csv", ignore_errors=True)
         
         # Create new column total_employment with the avg sum of (first_month_employment, second_month_employment and third_month_employment)
         df = df.with_columns(
         ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
         )
         # Select the colums (total_wages, year, qtr, naics_code and total_employment) 
-        df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment"))
+        df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment", "taxable_wages", "contributions_due"))
         # New column with the first 4 digits of the naics_code
         new_df_pd = df.with_columns(
         pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"), 
