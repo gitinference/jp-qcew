@@ -1,4 +1,4 @@
-name: jp-qcew
+name: jp_qcew
 channels:
   - conda-forge
 dependencies:
@@ -6,3 +6,4 @@ dependencies:
   - python=3.12
   - pandas=2.1.4
   - polars=1.2.1
+  -

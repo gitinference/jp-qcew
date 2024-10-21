@@ -173,3 +173,4 @@ notebooks/*
 !notebooks/*.qmd
 # vscode
 .vscode
+*.sqlite

@@ -1,0 +1,22 @@
+---
+title: "data processing"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+```{python}
+import os
+os.chdir("..")
+```
+
+```{python}
+import polars as pl
+from src.dao.qcew_table_raw.py import *
+```
+
+```{python}
+engine = create_engine("sqlite:///db.sqlite")
+create_trade_tables(self.engine)
+```
