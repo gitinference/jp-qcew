@@ -16,15 +16,13 @@ import polars as pl
 ```
 
 ```{python}
-# df = pl.read_csv("data/processed/2005_3.csv")
+
+# ---------- Master CSV ----------
 
 df = pl.read_csv("data/processed/master_df.csv", ignore_errors=True)
 
 print(df)
 
-
-
-# ------------------------
 df = df.with_columns(
   ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
 
@@ -51,10 +49,30 @@ print("Updated DataFrame with new total_wages:")
 
 print(grouped_df)
 
+```
+
+```{python}
+
+# ---------- Unique EXCEL ----------
+
+unique_df = pl.read_excel("data/processed/Query1_hac.xlsx")
 
 
-# ------------------------
+unique_df = unique_df.with_columns(
+  (pl.col("NAICS_R02").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"))
+)
+unique_df = unique_df.unique(subset=["first_4_naics_code"])
+unique_df = unique_df.sort("SEM_NUM_PAT")
 
+print(unique_df)
+
+final_df = grouped_df.join(unique_df, on="first_4_naics_code", how="inner", validate="m:1")
+
+print("Final data frame")
+
+final_df = final_df.sort("year")
+
+print(final_df)
 
 
 ```
