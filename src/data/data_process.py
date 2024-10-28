@@ -69,5 +69,21 @@ class cleanData:
         )
 
         grouped_df = grouped_df.filter(pl.col("dummy") > 4)
+        return df
         
-        df.write_parquet("data/processed/master_df.parquet")
+    def unique_naics_code(self):
+        df1 = self.group_by_naics_code()
+        unique_df = pl.read_excel("data/processed/Query1_hac.xlsx")
+        unique_df = unique_df.with_columns(
+        (pl.col("NAICS_R02").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"))
+        )
+        unique_df = unique_df.unique(subset=["first_4_naics_code"])
+        unique_df = unique_df.sort("SEM_NUM_PAT")
+
+        print(unique_df)
+
+        final_df = df1.join(unique_df, on="first_4_naics_code", how="inner", validate="m:1")
+
+        print("Final data frame")
+
+        final_df = final_df.sort("year")
