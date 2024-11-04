@@ -13,9 +13,36 @@ os.chdir("..")
 
 ```{python}
 import polars as pl
+import pandas as pd
+import json
 ```
 
 ```{python}
-df = pl.read_parquet("data/processed/cleaned_data.parquet").sort(["year", "qtr"]) 
-df
+df = pl.read_csv(
+  "data/raw/2011/A145.JOB021C.FILE.PR111", 
+  truncate_ragged_lines=True,
+  has_header=False,
+  encoding="latin1",
+  new_columns=["full_str"]
+  )
+column_names = [key for key in decode_file.keys()]
+widths = [key for key, value in decode_file.items() if value["length"]]
+slice_tuples = []
+offset = 0
+for i in widths:
+    slice_tuples.append((offset, i))
+    offset += i
+df.with_columns(
+    [
+       pl.col("full_str").str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col)
+       for slice_tuple, col in zip(slice_tuples, column_names)
+    ]
+).drop("full_str")
+decode_file = json.load(open("data/external/decode.json"))
+len(pl.DataFrame({key: [] for key in decode_file.keys()}).cast(pl.String).columns)
+```
+
+```{python}
+[key for key in decode_file.keys()]
+
 ```

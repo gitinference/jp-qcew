@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor
 import polars as pl
 import json
 import os
-import polars as pl
 
 class cleanData:
     def __init__(self, decode_path:str):
@@ -11,7 +10,7 @@ class cleanData:
 
     def make_dataset(self):
 
-        cleaned_df = pl.DataFrame(columns=self.decode_file.keys())
+        cleaned_df = pl.DataFrame({key: [] for key in self.decode_file.keys()}).cast(pl.String)
         for folder in os.listdir(self.data_dir):
             count = 0
             if folder == '.gitkeep':
@@ -22,31 +21,33 @@ class cleanData:
                         continue
                     else:
                         df = self.clean_txt(f"data/raw/{folder}/{file}")
-                        df["source_file"] = f"{folder}-{str(count)}"
-                        cleaned_df = pd.concat([cleaned_df, df])
+                        cleaned_df = pl.concat([cleaned_df, df], how="vertical")
                         print('Processed '+ folder + '_' + str(count))
                         count += 1
-        cleaned_df.to_parquet('data/processed/cleaned_data.parquet', index=False)
+        cleaned_df.write_parquet('data/processed/cleaned_data.parquet')
 
-    def process_line(self, line):
-        temp_df = []
-        for key in self.decode_file:
-            data = line[self.decode_file[key]['position']-1: self.decode_file[key]['position'] + self.decode_file[key]['length']-1]
-            data = data.strip()
-            temp_df.append(data)
-        return temp_df
-
-    def clean_txt(self, dev_file):
-        # Create an empty Polars DataFrame
-        df = pl.DataFrame({key: [] for key in self.decode_file.keys()})
+    def clean_txt(self, dev_file:str) -> pl.DataFrame:
+        df = pl.read_csv(
+            dev_file, 
+            separator="\n",
+            has_header=False,
+            encoding="latin1",
+            new_columns=["full_str"]
+        )
+        column_names = [key for key in self.decode_file.keys()]
+        widths = [value["length"] for value in self.decode_file.values()]
+        slice_tuples = []
+        offset = 0
         
-        # Use ThreadPoolExecutor to process lines
-        with ThreadPoolExecutor() as executor:
-            lines = [line for line in open(dev_file, 'rb')]
-            results = list(executor.map(self.process_line, lines))
+        for i in widths:
+            slice_tuples.append((offset, i))
+            offset += i
         
-        # Concatenate the results to the DataFrame
-        df = df.vstack(pl.DataFrame(results, schema=self.decode_file))
+        df = df.with_columns(
+            [
+            pl.col("full_str").str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col)
+            for slice_tuple, col in zip(slice_tuples, column_names)
+            ]).drop("full_str")
         
         return df
     
