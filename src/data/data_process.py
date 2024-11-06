@@ -1,16 +1,34 @@
-from concurrent.futures import ThreadPoolExecutor
+from ..dao.qcew_raw import create_qcew
+from sqlmodel import create_engine
 import polars as pl
+import ibis
 import json
 import os
 
 class cleanData:
-    def __init__(self, decode_path:str):
+    def __init__(self, decode_path:str, database_url:str="sqlite:///db.sqlite", debug:bool=True):
         self.decode_file = json.load(open(decode_path))
+        self.database_url = database_url
+        self.engine = create_engine(self.database_url)
         self.data_dir = 'data/raw'
+        self.debug = debug
+
+        if self.database_url.startswith("sqlite"):
+            self.conn = ibis.sqlite.connect(self.database_url.replace("sqlite:///", ""))
+        elif self.database_url.startswith("postgres"):
+            self.conn = ibis.postgres.connect(
+                user=self.database_url.split("://")[1].split(":")[0],
+                password=self.database_url.split("://")[1].split(":")[1].split("@")[0],
+                host=self.database_url.split("://")[1].split(":")[1].split("@")[1],
+                port=self.database_url.split("://")[1].split(":")[2].split("/")[0],
+                database=self.database_url.split("://")[1].split(":")[2].split("/")[1])
+        else:
+            raise Exception("Database url is not supported")
+        if "qcewtable" not in self.conn.list_tables():
+            create_qcew(self.engine)
 
     def make_dataset(self):
 
-        cleaned_df = pl.DataFrame({key: [] for key in self.decode_file.keys()}).cast(pl.String)
         for folder in os.listdir(self.data_dir):
             count = 0
             if folder == '.gitkeep':
@@ -20,15 +38,12 @@ class cleanData:
                     if os.path.exists('data/processed/' + file + '.parquet'):
                         continue
                     else:
-                        df = self.clean_txt(f"data/raw/{folder}/{file}")
-                        cleaned_df = pl.concat([cleaned_df, df], how="vertical")
-                        print('Processed '+ folder + '_' + str(count))
+                        self.clean_txt(f"data/raw/{folder}/{file}")
                         count += 1
-        cleaned_df.write_parquet('data/processed/cleaned_data.parquet')
 
-    def clean_txt(self, dev_file:str) -> pl.DataFrame:
+    def clean_txt(self, dev_file:str) -> None:
         df = pl.read_csv(
-            dev_file, 
+            dev_file,
             separator="\n",
             has_header=False,
             encoding="latin1",
@@ -38,22 +53,23 @@ class cleanData:
         widths = [value["length"] for value in self.decode_file.values()]
         slice_tuples = []
         offset = 0
-        
+
         for i in widths:
             slice_tuples.append((offset, i))
             offset += i
-        
+
         df = df.with_columns(
             [
             pl.col("full_str").str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col)
             for slice_tuple, col in zip(slice_tuples, column_names)
             ]).drop("full_str")
-        
-        return df
-    
+
+        self.conn.insert("qcewtable", df.cast(pl.String))
+        self.debug_log(f"Inserted {dev_file} into the database")
+
     def group_by_naics_code(self):
         df = pl.read_csv("data/processed/cleaned_data.csv", ignore_errors=True)
-        
+
         # Create new column total_employment with the avg sum of (first_month_employment, second_month_employment and third_month_employment)
         df = df.with_columns(
         ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
@@ -62,7 +78,7 @@ class cleanData:
         df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment", "taxable_wages", "contributions_due"))
         # New column with the first 4 digits of the naics_code
         new_df_pd = df.with_columns(
-        pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"), 
+        pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"),
         dummy=1
         )
         # Sum of the total_wages and total_employment to have the total_wages_sum column
@@ -74,7 +90,7 @@ class cleanData:
 
         grouped_df = grouped_df.filter(pl.col("dummy") > 4)
         return df
-        
+
     def unique_naics_code(self):
         df1 = self.group_by_naics_code()
         unique_df = pl.read_excel("data/processed/Query1_hac.xlsx")
@@ -91,3 +107,7 @@ class cleanData:
         print("Final data frame")
 
         final_df = final_df.sort("year")
+
+    def debug_log(self, message:str) -> None:
+        if self.debug:
+            print(f"\033[0;36mINFO: \033[0m {message}")

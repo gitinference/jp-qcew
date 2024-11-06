@@ -38,11 +38,12 @@ df.with_columns(
        for slice_tuple, col in zip(slice_tuples, column_names)
     ]
 ).drop("full_str")
-decode_file = json.load(open("data/external/decode.json"))
+
 len(pl.DataFrame({key: [] for key in decode_file.keys()}).cast(pl.String).columns)
 ```
 
 ```{python}
+decode_file = json.load(open("data/external/decode.json"))
 [key for key in decode_file.keys()]
 
 ```

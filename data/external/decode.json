@@ -407,23 +407,23 @@
     "position": 794,
     "length": 4
   },
-  "addr/cont": {
+  "addr_cont": {
     "position": 798,
     "length": 1
   },
-  "p/s_part/full_indic": {
+  "p_s_part_full_indic": {
     "position": 799,
     "length": 1
   },
-  "p/s_transfer_year": {
+  "p_s_transfer_year": {
     "position": 800,
     "length": 4
   },
-  "p/s_transfer_month": {
+  "p_s_transfer_month": {
     "position": 804,
     "length": 2
   },
-  "p/s_transfer_day": {
+  "p_s_transfer_day": {
     "position": 806,
     "length": 2
   },
@@ -443,11 +443,11 @@
     "position": 811,
     "length": 1
   },
-  "first_suppl_pre/suc": {
+  "first_suppl_pre_suc": {
     "position": 812,
     "length": 16
   },
-  "second_suppl_pre/suc": {
+  "second_suppl_pre_suc": {
     "position": 828,
     "length": 16
   },
