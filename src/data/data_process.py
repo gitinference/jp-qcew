@@ -1,17 +1,30 @@
 from ..dao.qcew_raw import create_qcew
 from sqlmodel import create_engine
+from tqdm import tqdm
 import polars as pl
+import requests
 import ibis
 import json
 import os
 
 class cleanData:
-    def __init__(self, decode_path:str, database_url:str="sqlite:///db.sqlite", debug:bool=True):
-        self.decode_file = json.load(open(decode_path))
+    def __init__(self, saving_dir:str='data/', database_url:str="sqlite:///db.sqlite", debug:bool=True):
+
         self.database_url = database_url
         self.engine = create_engine(self.database_url)
-        self.data_dir = 'data/raw'
+        self.saving_dir = saving_dir
         self.debug = debug
+
+        # Check if the saving directory exists
+        if not os.path.exists(self.saving_dir + "raw"):
+            os.makedirs(self.saving_dir + "raw")
+        if not os.path.exists(self.saving_dir + "processed"):
+            os.makedirs(self.saving_dir + "processed")
+        if not os.path.exists(self.saving_dir + "external"):
+            os.makedirs(self.saving_dir + "external")
+
+        if not os.path.exists(self.saving_dir + "external/decode.json"):
+            self.pull_file(url="https://github.com/ouslan/jp-QCEW/tree/main/data/external", filename=f"{self.saving_dir}external/decode.json")
 
         if self.database_url.startswith("sqlite"):
             self.conn = ibis.sqlite.connect(self.database_url.replace("sqlite:///", ""))
@@ -27,21 +40,21 @@ class cleanData:
         if "qcewtable" not in self.conn.list_tables():
             create_qcew(self.engine)
 
-    def make_dataset(self):
+    def make_qcew_dataset(self):
 
-        for folder in os.listdir(self.data_dir):
+        for folder in os.listdir(f"{self.saving_dir}/raw"):
             count = 0
             if folder == '.gitkeep':
                 continue
             else:
-                for file in os.listdir('data/raw/' + folder):
+                for file in os.listdir(f"{self.saving_dir}/raw/{folder}"):
                     if os.path.exists('data/processed/' + file + '.parquet'):
                         continue
                     else:
-                        self.clean_txt(f"data/raw/{folder}/{file}")
+                        self.clean_txt("qcewtable", f"{folder}/{file}", f"{self.saving_dir}external/decode.json")
                         count += 1
 
-    def clean_txt(self, dev_file:str) -> None:
+    def clean_txt(self, table:str, dev_file:str, decode_path:str) -> None:
         df = pl.read_csv(
             dev_file,
             separator="\n",
@@ -49,8 +62,9 @@ class cleanData:
             encoding="latin1",
             new_columns=["full_str"]
         )
-        column_names = [key for key in self.decode_file.keys()]
-        widths = [value["length"] for value in self.decode_file.values()]
+        decode_file = json.load(open(decode_path, "r"))
+        column_names = [key for key in decode_file.keys()]
+        widths = [value["length"] for value in decode_file.values()]
         slice_tuples = []
         offset = 0
 
@@ -64,8 +78,8 @@ class cleanData:
             for slice_tuple, col in zip(slice_tuples, column_names)
             ]).drop("full_str")
 
-        self.conn.insert("qcewtable", df.cast(pl.String))
-        self.debug_log(f"Inserted {dev_file} into the database")
+        self.conn.insert(table, df.cast(pl.String))
+        self.debug_log(f"Inserted {dev_file} into the database {table}")
 
     def group_by_naics_code(self):
         df = pl.read_csv("data/processed/cleaned_data.csv", ignore_errors=True)
@@ -89,6 +103,11 @@ class cleanData:
         )
 
         grouped_df = grouped_df.filter(pl.col("dummy") > 4)
+        grouped_df = grouped_df.with_columns(
+            fondo_contributions=pl.col("total_wages") * 0.014,
+            medicare_contributions=pl.col("total_wages") * 0.0145,
+            ssn_contributions=pl.col("total_wages") * 0.062
+        )
         return df
 
     def unique_naics_code(self):
@@ -107,6 +126,35 @@ class cleanData:
         print("Final data frame")
 
         final_df = final_df.sort("year")
+
+    def pull_file(self, url:str, filename:str, verify:bool=True) -> None:
+        """
+        Pulls a file from a URL and saves it in the filename. Used by the class to pull external files.
+
+        Parameters
+        ----------
+        url: str
+            The URL to pull the file from.
+        filename: str
+            The filename to save the file to.
+        verify: bool
+            If True, verifies the SSL certificate. If False, does not verify the SSL certificate.
+
+        Returns
+        -------
+        None
+        """
+        chunk_size = 10 * 1024 * 1024
+
+        with requests.get(url, stream=True, verify=verify) as response:
+            total_size = int(response.headers.get('content-length', 0))
+
+            with tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024, desc='Downloading') as bar:
+                with open(filename, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:
+                            file.write(chunk)
+                            bar.update(len(chunk))  # Update the progress bar with the size of the chunks
 
     def debug_log(self, message:str) -> None:
         if self.debug:
