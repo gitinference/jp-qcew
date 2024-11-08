@@ -51,7 +51,7 @@ class cleanData:
                     if os.path.exists('data/processed/' + file + '.parquet'):
                         continue
                     else:
-                        self.clean_txt("qcewtable", f"{folder}/{file}", f"{self.saving_dir}external/decode.json")
+                        self.clean_txt("qcewtable", f"{self.saving_dir}raw/{folder}/{file}", f"{self.saving_dir}external/decode.json")
                         count += 1
 
     def clean_txt(self, table:str, dev_file:str, decode_path:str) -> None:
