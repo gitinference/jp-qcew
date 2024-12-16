@@ -5,7 +5,7 @@ class QCEWTable(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     trans_code: str
     state_fips: str
-    year: str
+    year: int
     qtr: str
     ui_code: str
     rep_uni_id: str
