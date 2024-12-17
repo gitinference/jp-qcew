@@ -11,6 +11,7 @@ dependencies = [
     "polars>=1.17.1",
     "psycopg2-binary>=2.9.10",
     "sqlmodel>=0.0.22",
+    "tqdm>=4.67.1",
 ]
 
 [dependency-groups]
