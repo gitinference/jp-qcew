@@ -107,7 +107,6 @@ class cleanData:
             first_4_naics_code=df.first_4_naics_code.cast("int64"),
             total_wages=df.total_wages.cast("int64")  
         )
-        .order_by("year")
         )
 
 
@@ -118,7 +117,6 @@ class cleanData:
         total_employment_sum=df.total_employment.sum(),
         dummy_sum=df.dummy.sum()
         )
-        .order_by("year")
         )
 
         df = df.filter(df["dummy_sum"] > 4)
@@ -152,6 +150,8 @@ class cleanData:
         df_qcew, predicates=("first_4_naics_code")
 
         )
+        
+        return df2
 
     def pull_file(self, url:str, filename:str, verify:bool=True) -> None:
         """
