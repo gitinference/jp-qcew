@@ -1,0 +1,36 @@
+---
+title: "data processing"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+```{python}
+import os
+os.chdir("..")
+```
+
+```{python}
+from src.data.data_process import cleanData 
+import polars as pl
+import pandas as pd
+import json
+import ibis
+
+ibis.options.interactive = True
+```
+
+```{python}
+conn = ibis.duckdb.connect("data.ddb")
+conn.table("qcewtable")
+```
+
+```{python}
+d = cleanData().clean_txt(
+    f"data/raw/{folder}/{file}",
+    f"data/external/decode.json",
+)
+```
+
+

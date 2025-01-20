@@ -41,13 +41,20 @@ class cleanData:
                 continue
             else:
                 for file in os.listdir(f"{self.saving_dir}/raw/{folder}"):
+                    db = self.conn.table("qcewtable")
                     df = self.clean_txt(
                         f"{self.saving_dir}raw/{folder}/{file}",
                         f"{self.saving_dir}external/decode.json",
                     )
-                    self.conn.insert("qcewtable", df)
-                    logging.info(f"File {file} has been inserted into the database.")
-                    count += 1
+                    if df.is_empty():
+                        logging.warning(f"File {file} is empty.")
+                        continue
+                    else:
+                        self.conn.insert("qcewtable", df)
+                        logging.info(
+                            f"File {file} for {folder} has been inserted into the database."
+                        )
+                        count += 1
 
     def clean_txt(self, dev_file: str, decode_path: str) -> pl.DataFrame:
         df = pl.read_csv(
@@ -76,6 +83,7 @@ class cleanData:
                 for slice_tuple, col in zip(slice_tuples, column_names)
             ]
         ).drop("full_str")
+        df = df.filter(pl.col("year") != "")
 
         return df.cast(pl.String)
 
@@ -175,7 +183,3 @@ class cleanData:
                             bar.update(
                                 len(chunk)
                             )  # Update the progress bar with the size of the chunks
-
-    def debug_log(self, message: str) -> None:
-        if self.debug:
-            print(f"\033[0;36mINFO: \033[0m {message}")
