@@ -13,66 +13,87 @@ os.chdir("..")
 
 ```{python}
 import polars as pl
+from src.data.data_process import cleanData
+import ibis 
+
+ibis.options.interactive = True
 ```
 
+```{python}
+d = cleanData()
+unique_df = pl.read_excel("data/processed/Query1_hac.xlsx")
+# df.filter(df.id.isnull())
+d.conn.insert("hactable", unique_df.cast(pl.String))
+```
 ```{python}
 
 # ---------- Master CSV ----------
 
-df = pl.read_csv("data/processed/master_df.csv", ignore_errors=True)
+df = d.conn.table("qcewtable")
 
-print(df)
+df = df.mutate(
+  total_employment=(df.first_month_employment.cast("float64") + df.second_month_employment.cast("float64") + df.third_month_employment.cast("float64")
+)/3)
 
-df = df.with_columns(
-  ((pl.col("first_month_employment") + pl.col("second_month_employment") + pl.col("third_month_employment")) / 3).alias("total_employment")
-
-)
-df = df.select(pl.col("total_wages","year", "qtr", "naics_code", "total_employment"))
-print(df)
-
-new_df_pd = df.with_columns(
-  pl.col("naics_code").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"),
-  dummy=1
-  
+df = df.mutate(
+  first_4_naics_code=df.naics_code.cast("string").substr(0, 4),
+  dummy=ibis.literal(1)
 )
 
-
-grouped_df = new_df_pd.group_by(["year", "qtr", "first_4_naics_code"]).agg(
-    pl.col("total_wages").sum().alias("total_wages_sum"),
-    pl.col("total_employment").sum().alias("total_employment_sum"),
-    pl.col("dummy").sum().alias("dummy")
+# Cast columns to int64 and then group by them
+df = (df.mutate(
+    #year=df.year.cast("int64"),
+    qtr=df.qtr.cast("int64"),
+    first_4_naics_code=df.first_4_naics_code.cast("int64"),
+    total_wages=df.total_wages.cast("int64")  
+)
+.order_by("year")
 )
 
-grouped_df = grouped_df.filter(pl.col("dummy") > 4)
 
-print("Updated DataFrame with new total_wages:")
+# Group by the specified columns and aggregate
+df = (
+  df.group_by(["year", "qtr", "first_4_naics_code"]).aggregate(
+  total_wages_sum=df.total_wages.sum(),
+  total_employment_sum=df.total_employment.sum(),
+  dummy_sum=df.dummy.sum()
+  )
+  .order_by("year")
+)
 
-print(grouped_df)
+df = df.filter(df["dummy_sum"] > 4)
 
+# Step 2: Add calculated columns for contributions
+df = df.mutate(
+  fondo_contributions=df["total_wages_sum"] * 0.014,
+  medicare_contributions=df["total_wages_sum"] * 0.0145,
+  ssn_contributions=df["total_wages_sum"] * 0.062
+)
+
+df_qcew = df
+df_qcew
 ```
 
 ```{python}
 
 # ---------- Unique EXCEL ----------
 
-unique_df = pl.read_excel("data/processed/Query1_hac.xlsx")
+# Load the data
+df = d.conn.table("hactable")
 
-
-unique_df = unique_df.with_columns(
-  (pl.col("NAICS_R02").cast(pl.Utf8).str.slice(0,4).alias("first_4_naics_code"))
+df = df.mutate(
+  first_4_naics_code=df.NAICS_R02.substr(0, 4)
 )
-unique_df = unique_df.unique(subset=["first_4_naics_code"])
-unique_df = unique_df.sort("SEM_NUM_PAT")
 
-print(unique_df)
+df = df.mutate(
+  first_4_naics_code=(df.first_4_naics_code.cast("int64"))
+)
+df2 = df.join(
+  df_qcew, predicates=("first_4_naics_code")
 
-final_df = grouped_df.join(unique_df, on="first_4_naics_code", how="inner", validate="m:1")
-
-print("Final data frame")
-
-final_df = final_df.sort("year")
-
-print(final_df)
+)
 
 
+
+df2
 ```
