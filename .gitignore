@@ -30,6 +30,7 @@ MANIFEST
 *.sqlite3
 *.db
 *.sqlite
+*.ddb
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

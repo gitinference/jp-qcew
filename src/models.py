@@ -5,8 +5,15 @@ con = duckdb.connect("data.ddb")
 
 con.sql(
     """
+    DROP SEQUENCE IF EXISTS id_sequence;
+    CREATE SEQUENCE id_sequence START 1;
+    """
+)
+
+con.sql(
+    """
     CREATE TABLE IF NOT EXISTS "qcewtable" (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
         trans_code TEXT,
         state_fips TEXT,
         year INTEGER,
@@ -128,6 +135,6 @@ con.sql(
         qcew_contact_fax TEXT,
         qcew_contact_website TEXT,
         future_use TEXT
-        )
+        );
     """
 )
