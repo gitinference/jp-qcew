@@ -23,14 +23,11 @@ ibis.options.interactive = True
 
 ```{python}
 conn = ibis.duckdb.connect("data.ddb")
-conn.table("qcewtable")
+df = conn.table("qcewtable")
 ```
 
 ```{python}
-d = cleanData().clean_txt(
-    f"data/raw/{folder}/{file}",
-    f"data/external/decode.json",
-)
+df.to_csv("qcew_raw.csv")
 ```
 
 

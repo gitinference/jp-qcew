@@ -30,48 +30,47 @@ d.conn.insert("hactable", unique_df.cast(pl.String))
 # ---------- Master CSV ----------
 
 df = d.conn.table("qcewtable")
-
-df = df.mutate(
-  total_employment=(df.first_month_employment.cast("float64") + df.second_month_employment.cast("float64") + df.third_month_employment.cast("float64")
-)/3)
-
-df = df.mutate(
-  first_4_naics_code=df.naics_code.cast("string").substr(0, 4),
-  dummy=ibis.literal(1)
-)
+# df = df.mutate(
+#   total_employment=(df.first_month_employment.cast("float64") + df.second_month_employment.cast("float64") + df.third_month_employment.cast("float64")
+# )/3)
+df.filter(df.first_month_employment == )
+# df = df.mutate(
+#   first_4_naics_code=df.naics_code.cast("string").substr(0, 4),
+#   dummy=ibis.literal(1)
+# )
 
 # Cast columns to int64 and then group by them
-df = (df.mutate(
-    #year=df.year.cast("int64"),
-    qtr=df.qtr.cast("int64"),
-    first_4_naics_code=df.first_4_naics_code.cast("int64"),
-    total_wages=df.total_wages.cast("int64")  
-)
-.order_by("year")
-)
+# df = (df.mutate(
+#     #year=df.year.cast("int64"),
+#     qtr=df.qtr.cast("int64"),
+#     first_4_naics_code=df.first_4_naics_code.cast("int64"),
+#     total_wages=df.total_wages.cast("int64")  
+# )
+# .order_by("year")
+# )
 
 
-# Group by the specified columns and aggregate
-df = (
-  df.group_by(["year", "qtr", "first_4_naics_code"]).aggregate(
-  total_wages_sum=df.total_wages.sum(),
-  total_employment_sum=df.total_employment.sum(),
-  dummy_sum=df.dummy.sum()
-  )
-  .order_by("year")
-)
+# # Group by the specified columns and aggregate
+# df = (
+#   df.group_by(["year", "qtr", "first_4_naics_code"]).aggregate(
+#   total_wages_sum=df.total_wages.sum(),
+#   total_employment_sum=df.total_employment.sum(),
+#   dummy_sum=df.dummy.sum()
+#   )
+#   .order_by("year")
+# )
 
-df = df.filter(df["dummy_sum"] > 4)
+# df = df.filter(df["dummy_sum"] > 4)
 
-# Step 2: Add calculated columns for contributions
-df = df.mutate(
-  fondo_contributions=df["total_wages_sum"] * 0.014,
-  medicare_contributions=df["total_wages_sum"] * 0.0145,
-  ssn_contributions=df["total_wages_sum"] * 0.062
-)
+# # Step 2: Add calculated columns for contributions
+# df = df.mutate(
+#   fondo_contributions=df["total_wages_sum"] * 0.014,
+#   medicare_contributions=df["total_wages_sum"] * 0.0145,
+#   ssn_contributions=df["total_wages_sum"] * 0.062
+# )
 
-df_qcew = df
-df_qcew
+# df_qcew = df
+# df_qcew
 ```
 
 ```{python}

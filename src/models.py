@@ -7,6 +7,8 @@ con.sql(
     """
     DROP SEQUENCE IF EXISTS id_sequence;
     CREATE SEQUENCE id_sequence START 1;
+    DROP SEQUENCE IF EXISTS id_sequence_hac;
+    CREATE SEQUENCE id_sequence_hac START 1;
     """
 )
 
@@ -138,3 +140,23 @@ con.sql(
         );
     """
 )
+
+con.sql(
+    """
+    CREATE TABLE IF NOT EXISTS "hactable" (
+    id INTEGER PRIMARY KEY DEFAULT nextval('id_sequence_hac'),
+    SEM_NUM_PAT TEXT,
+    SEM_HSEG_SOC TEXT,
+    SEM_FORMA_LEGAL TEXT,
+    SEM_NOMBRE TEXT,
+    SEM_COD_ACTIVOS TEXT,
+    SEM_SIC TEXT,
+    SEM_INDUSTRIA TEXT,
+    SEM_SIC_NEW TEXT,
+    SEM_INDUSTRIA_N TEXT,
+    NAICS_R02 TEXT,
+    SEM_INDUS_R02 TEXT
+    );
+    """
+)
+
