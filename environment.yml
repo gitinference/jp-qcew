@@ -1,8 +1,0 @@
-name: jp-qcew
-channels:
-  - conda-forge
-dependencies:
-  - pip=23.3.1
-  - python=3.12
-  - pandas=2.1.4
-  - polars=1.2.1
