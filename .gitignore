@@ -180,3 +180,4 @@ notebooks/*
 !notebooks/*.qmd
 # vscode
 .vscode
+data_process.log

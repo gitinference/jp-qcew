@@ -1,5 +1,8 @@
+from ..models import *
 from tqdm import tqdm
+import geopandas as gpd
 import polars as pl
+import pandas as pd
 import requests
 import logging
 import ibis
@@ -16,8 +19,14 @@ class cleanData:
         self.database_url = database_url
         self.saving_dir = saving_dir
         self.data_file = self.database_url.split("///")[1]
+        self.conn = ibis.duckdb.connect(f"{self.data_file}")
 
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%d-%b-%y %H:%M:%S",
+            filename="data_process.log",
+        )
         # Check if the saving directory exists
         if not os.path.exists(self.saving_dir + "raw"):
             os.makedirs(self.saving_dir + "raw")
@@ -32,7 +41,10 @@ class cleanData:
                 filename=f"{self.saving_dir}external/decode.json",
             )
 
-        self.conn = ibis.duckdb.connect(f"{self.data_file}")
+        if "qcewtable" not in self.conn.list_tables():
+            init_qcew_table(self.data_file)
+        if "hactable" not in self.conn.list_tables():
+            init_hac_table(self.data_file)
 
     def make_qcew_dataset(self):
         for folder in os.listdir(f"{self.saving_dir}/raw"):
@@ -41,12 +53,11 @@ class cleanData:
                 continue
             else:
                 for file in os.listdir(f"{self.saving_dir}/raw/{folder}"):
-                    db = self.conn.table("qcewtable")
                     df = self.clean_txt(
                         f"{self.saving_dir}raw/{folder}/{file}",
                         f"{self.saving_dir}external/decode.json",
                     )
-                    if df.is_empty():
+                    if df.empty:
                         logging.warning(f"File {file} is empty.")
                         continue
                     else:
@@ -56,7 +67,7 @@ class cleanData:
                         )
                         count += 1
 
-    def clean_txt(self, dev_file: str, decode_path: str) -> pl.DataFrame:
+    def clean_txt(self, dev_file: str, decode_path: str) -> pd.DataFrame:
         df = pl.read_csv(
             dev_file,
             separator="\n",
@@ -83,9 +94,25 @@ class cleanData:
                 for slice_tuple, col in zip(slice_tuples, column_names)
             ]
         ).drop("full_str")
-        df = df.filter(pl.col("year") != "")
+        df = df.with_columns(
+            pl.col("latitude").cast(pl.Float64, strict=False),
+            pl.col("longitude").cast(pl.Float64, strict=False),
+            pl.col("year").cast(pl.Int64, strict=False),
+            pl.col("qtr").cast(pl.Int64, strict=False),
+            pl.col("first_month_employment").cast(pl.Int64, strict=False),
+            pl.col("second_month_employment").cast(pl.Int64, strict=False),
+            pl.col("third_month_employment").cast(pl.Int64, strict=False),
+            pl.col("total_wages").cast(pl.Int64, strict=False),
+            pl.col("taxable_wages").cast(pl.Int64, strict=False),
+        ).to_pandas()
+        gdf = gpd.GeoDataFrame(
+            df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326"
+        )
+        gdf = gdf.rename(columns={"geometry": "geom"})
+        gdf = gdf.drop(columns=["longitude", "latitude"])
+        gdf["geom"] = gdf["geom"].apply(lambda x: x.wkt)
 
-        return df.cast(pl.String)
+        return gdf
 
     def group_by_naics_code(self):
         # ---------- Master CSV ----------
