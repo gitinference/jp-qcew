@@ -7,6 +7,7 @@ def get_conn(db_path: str) -> duckdb.DuckDBPyConnection:
 
 def init_qcew_table(db_path: str) -> None:
     conn = get_conn(db_path)
+    conn.install_extension("spatial")
     conn.load_extension("spatial")
     conn.sql("DROP SEQUENCE IF EXISTS id_sequence;")
     conn.sql("CREATE SEQUENCE id_sequence START 1;")
