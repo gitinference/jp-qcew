@@ -132,7 +132,7 @@ class cleanData:
             pl.col("taxable_wages").cast(pl.Int64, strict=False),
         ).to_pandas()
         gdf = gpd.GeoDataFrame(
-            df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326"
+            df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:3454"
         )
         gdf = gdf.rename(columns={"geometry": "geom"})
         gdf = gdf.drop(columns=["longitude", "latitude"])
