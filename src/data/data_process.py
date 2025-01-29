@@ -1,6 +1,7 @@
+import ibis.expr.types as it
+import geopandas as gpd
 from ..models import *
 from tqdm import tqdm
-import geopandas as gpd
 import polars as pl
 import pandas as pd
 import requests
@@ -46,7 +47,18 @@ class cleanData:
         if "hactable" not in self.conn.list_tables():
             init_hac_table(self.data_file)
 
-    def make_qcew_dataset(self):
+    def make_qcew_dataset(self) -> None:
+        """
+        This function reads the raw data files in data/raw and inserts them into the database.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         for folder in os.listdir(f"{self.saving_dir}/raw"):
             count = 0
             if folder == ".gitkeep" or folder == ".DS_Store":
@@ -68,6 +80,20 @@ class cleanData:
                         count += 1
 
     def clean_txt(self, dev_file: str, decode_path: str) -> pd.DataFrame:
+        """
+        This function reads the raw txt files and cleans them up based on the decode file.
+
+        Parameters
+        ----------
+        dev_file: str
+            The path to the raw txt file.
+        decode_path: str
+            The path to the decode file.
+
+        Returns
+        -------
+        pd.DataFrame
+        """
         df = pl.read_csv(
             dev_file,
             separator="\n",
@@ -114,32 +140,34 @@ class cleanData:
 
         return gdf
 
-    def group_by_naics_code(self):
-        # ---------- Master CSV ----------
+    def group_by_naics_code(self) -> it.Table:
+        """
+        This function aggregate the data by year, quarter, and first 4 digits of the NAICS code.
 
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        it.Table
+        """
         df = self.conn.table("qcewtable")
 
         df = df.mutate(
             total_employment=(
-                df.first_month_employment.cast("float64")
-                + df.second_month_employment.cast("float64")
-                + df.third_month_employment.cast("float64")
+                df.first_month_employment
+                + df.second_month_employment
+                + df.third_month_employment
             )
             / 3
         )
 
         df = df.mutate(
-            first_4_naics_code=df.naics_code.cast("string").substr(0, 4),
+            first_4_naics_code=df.naics_code.substr(0, 4),
             dummy=ibis.literal(1),
         )
-
-        # Cast columns to int64 and then group by them
-        df = df.mutate(
-            # year=df.year.cast("int64"),
-            qtr=df.qtr.cast("int64"),
-            first_4_naics_code=df.first_4_naics_code.cast("int64"),
-            total_wages=df.total_wages.cast("int64"),
-        )
+        df = df.filter(df.first_4_naics_code != "")
 
         # Group by the specified columns and aggregate
         df = df.group_by(["year", "qtr", "first_4_naics_code"]).aggregate(
@@ -160,8 +188,6 @@ class cleanData:
         return df
 
     def unique_naics_code(self):
-        # ---------- Unique EXCEL ----------
-
         df_qcew = self.group_by_naics_code()
 
         # Load the data
