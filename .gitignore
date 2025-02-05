@@ -32,6 +32,9 @@ MANIFEST
 *.sqlite
 *.ddb
 *.wal
+*.csv
+*.txt
+*.parquet
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
