@@ -88,15 +88,8 @@ class dataViz(cleanData):
 
     def create_employment_graph(self):
         viz = self.get_timescale()
-        alt.Chart(viz).mark_line(interpolate="monotone").encode(
+        graph = alt.Chart(viz).mark_line(interpolate="monotone").encode(
             x="date",
             y="employment"
         )
-
-
-def main():
-    dataViz.create_employment_graph()
-
-
-if __name__ == "__main__":
-    main()
+        return graph
