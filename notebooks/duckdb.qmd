@@ -14,20 +14,12 @@ os.chdir("..")
 ```{python}
 from src.data.data_process import cleanData 
 import polars as pl
-import pandas as pd
-import json
-import ibis
 
-ibis.options.interactive = True
+dc = cleanData() 
 ```
 
 ```{python}
-conn = ibis.duckdb.connect("data.ddb")
-df = conn.table("qcewtable")
-```
-
-```{python}
-df.to_csv("qcew_raw.csv")
+dc.group_by_naics_code()
 ```
 
 

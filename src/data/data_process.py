@@ -153,7 +153,7 @@ class cleanData:
         """
         df = self.conn.sql("SELECT * FROM qcewtable").pl()
 
-        df = df.with_column(
+        df = df.with_columns(
             total_wages=(
                 pl.col("first_month_employment")
                 + pl.col("second_month_employment")
@@ -162,7 +162,7 @@ class cleanData:
             / 3
         )
 
-        df = df.with_column(
+        df = df.with_columns(
             naics4=pl.col("naics_code").str.slice(0, 4),
             dummy=pl.lit(1),
         )
@@ -178,7 +178,7 @@ class cleanData:
         df = df.filter(pl.col("dummy_sum") > 4)
 
         # Step 2: Add calculated columns for contributions
-        df = df.with_column(
+        df = df.with_columns(
             fondo_contributions=pl.col("fondo_contributions") * 0.014,
             medicare_contributions=pl.col("medicare_contributions") * 0.0145,
             ssn_contributions=pl.col("ssn_contributions") * 0.062,
