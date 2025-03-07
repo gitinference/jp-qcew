@@ -1,11 +1,10 @@
 import geopandas as gpd
-from ..models import init_qcew_table, init_hac_table, get_conn
+from ..models import init_qcew_table, get_conn
 from tqdm import tqdm
 import polars as pl
 import pandas as pd
 import requests
 import logging
-import ibis
 import json
 import os
 
