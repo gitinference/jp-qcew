@@ -9,12 +9,9 @@ def init_qcew_table(db_path: str) -> None:
     conn = get_conn(db_path)
     conn.install_extension("spatial")
     conn.load_extension("spatial")
-    conn.sql("DROP SEQUENCE IF EXISTS id_sequence;")
-    conn.sql("CREATE SEQUENCE id_sequence START 1;")
     conn.sql(
         """
         CREATE TABLE IF NOT EXISTS "qcewtable" (
-            id INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
             trans_code TEXT,
             state_fips TEXT,
             year INTEGER,
@@ -142,12 +139,9 @@ def init_qcew_table(db_path: str) -> None:
 
 def init_hac_table(db_path: str) -> None:
     con = get_conn(db_path)
-    con.sql("DROP SEQUENCE IF EXISTS id_sequence_hac;")
-    con.sql("CREATE SEQUENCE id_sequence_hac START 1;")
     con.sql(
         """
     CREATE TABLE IF NOT EXISTS "hactable" (
-    id INTEGER PRIMARY KEY DEFAULT nextval('id_sequence_hac'),
     SEM_NUM_PAT TEXT,
     SEM_HSEG_SOC TEXT,
     SEM_FORMA_LEGAL TEXT,
@@ -162,8 +156,3 @@ def init_hac_table(db_path: str) -> None:
     );
     """
     )
-
-
-if __name__ == "__main__":
-    con = get_conn("data.ddb")
-    init_qcew_table("data.ddb")
