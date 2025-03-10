@@ -33,9 +33,9 @@ class cleanData:
             os.makedirs(self.saving_dir + "processed")
         if not os.path.exists(self.saving_dir + "external"):
             os.makedirs(self.saving_dir + "external")
-        if not os.path.exists(self.saving_dir + "external/decode.json"):
+        if not os.path.exists(f"{self.saving_dir}external/decode.json"):
             self.pull_file(
-                url="https://github.com/ouslan/jp-QCEW/tree/main/data/external",
+                url="https://raw.githubusercontent.com/EconLabs/jp-QCEW/refs/heads/main/data/external/decode.json",
                 filename=f"{self.saving_dir}external/decode.json",
             )
 
@@ -53,12 +53,12 @@ class cleanData:
         """
         if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
             init_qcew_table(self.data_file)
-            for folder in os.listdir(f"{self.saving_dir}/raw"):
+            for folder in os.listdir(f"{self.saving_dir}raw"):
                 count = 0
                 if folder == ".gitkeep" or folder == ".DS_Store":
                     continue
                 else:
-                    for file in os.listdir(f"{self.saving_dir}/raw/{folder}"):
+                    for file in os.listdir(f"{self.saving_dir}raw/{folder}"):
                         df = self.clean_txt(
                             f"{self.saving_dir}raw/{folder}/{file}",
                             f"{self.saving_dir}external/decode.json",
