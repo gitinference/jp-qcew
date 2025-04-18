@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.12"
 
 [[package]]
@@ -757,7 +758,7 @@ wheels = [
 
 [[package]]
 name = "jp-qcew"
-version = "1.1.0"
+version = "1.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "altair", extra = ["all"] },
