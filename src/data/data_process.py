@@ -100,25 +100,24 @@ class cleanData:
             encoding="latin1",
             new_columns=["full_str"],
         )
+
         decode_file = json.load(open(decode_path, "r"))
-        column_names = [key for key in decode_file.keys()]
-        widths = [value["length"] for value in decode_file.values()]
-        slice_tuples = []
-        offset = 0
+        column_names = list(decode_file.keys())
 
-        for i in widths:
-            slice_tuples.append((offset, i))
-            offset += i
+        # Create (start, length) tuples from decode_file using 0-based indexing
+        slice_tuples = [
+            (value["position"] - 1, value["length"]) for value in decode_file.values()
+        ]
 
+        # Use Polars to slice each field from the full string
         df = df.with_columns(
             [
-                pl.col("full_str")
-                .str.slice(slice_tuple[0], slice_tuple[1])
-                .str.strip_chars()
-                .alias(col)
-                for slice_tuple, col in zip(slice_tuples, column_names)
+                pl.col("full_str").str.slice(start, length).str.strip_chars().alias(col)
+                for (start, length), col in zip(slice_tuples, column_names)
             ]
         ).drop("full_str")
+
+        # Cast numeric fields
         df = df.with_columns(
             pl.col("latitude").cast(pl.Float64, strict=False),
             pl.col("longitude").cast(pl.Float64, strict=False),
@@ -130,11 +129,14 @@ class cleanData:
             pl.col("total_wages").cast(pl.Int64, strict=False),
             pl.col("taxable_wages").cast(pl.Int64, strict=False),
         ).to_pandas()
+
+        # Convert to GeoDataFrame
         gdf = gpd.GeoDataFrame(
             df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:3454"
         )
-        gdf = gdf.rename(columns={"geometry": "geom"})
-        gdf = gdf.drop(columns=["longitude", "latitude"])
+        gdf = gdf.rename(columns={"geometry": "geom"}).drop(
+            columns=["longitude", "latitude"]
+        )
         gdf["geom"] = gdf["geom"].apply(lambda x: x.wkt)
 
         return gdf
