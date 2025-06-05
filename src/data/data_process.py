@@ -200,6 +200,27 @@ class cleanData:
         df2 = df.join(df_qcew, predicates=("first_4_naics_code"))
 
         return df2
+    
+    def get_naics_data(self, naics_code: str) -> pl.DataFrame:
+        naics_data = pl.read_parquet(f"{self.saving_dir}external/naics4_df.parquet")
+    
+        df_filtered = naics_data.filter(pl.col("first_4_naics_code") == naics_code)
+        df_filtered = df_filtered.filter(pl.col("year") < 2024)
+
+        df_filtered = df_filtered.with_columns([
+            pl.format("Q{} {}", pl.col("year"), pl.col("qtr"),).alias("x_axis")
+        ])
+        df_filtered = df_filtered.sort(["x_axis"], descending=False)
+
+        naics = (
+            naics_data
+            .filter(pl.col("first_4_naics_code") != "0")
+            .select("first_4_naics_code")
+            .unique()
+            .sort(["first_4_naics_code"], descending=False)
+        )
+
+        return df_filtered, naics
 
     def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
         """
