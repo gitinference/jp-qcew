@@ -40,7 +40,7 @@ class graphGenerator(cleanData):
         return chart
     
     def gen_naics_graph(self, naics_code : str) -> alt.Chart:
-        df_filtered, naics = cleanData.get_naics_data(self, naics_code)
+        df_filtered, naics = self.get_naics_data(naics_code)
 
         line = alt.Chart(df_filtered).mark_line().encode(
             x=alt.X('x_axis:N', title='Year'),
