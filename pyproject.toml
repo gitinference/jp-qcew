@@ -1,6 +1,6 @@
 [project]
 name = "jp-qcew"
-version = "1.2.0"
+version = "1.2.1"
 authors = [{ name = "Alejandro Ousland", email = "alejandro.ouslan@upr.edu" }]
 description = "Add your description here"
 readme = "README.md"
