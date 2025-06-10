@@ -58,7 +58,7 @@ class graphGenerator(cleanData):
         )
         chart = (line + points).properties(
             title=f'Employment in the US by Quarter for NAICS {naics_code}',
-            width=1000,
+            width='container',
             height=200
         ).configure_view(
             fill='#e6f7ff'
