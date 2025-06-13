@@ -179,8 +179,6 @@ data/external/
 *.DS_Store
 
 # ignore quarter files 
-notebooks/*
-!notebooks/*.qmd
 # vscode
 .vscode
 data_process.log
