@@ -53,14 +53,14 @@ class cleanData:
         """
         if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
             init_qcew_table(self.data_file)
-            for folder in os.listdir(f"{self.saving_dir}raw"):
+            for folder in os.listdir(f"{self.saving_dir}qcew"):
                 count = 0
                 if folder == ".gitkeep" or folder == ".DS_Store":
                     continue
                 else:
-                    for file in os.listdir(f"{self.saving_dir}raw/{folder}"):
+                    for file in os.listdir(f"{self.saving_dir}qcew/{folder}"):
                         df = self.clean_txt(
-                            f"{self.saving_dir}raw/{folder}/{file}",
+                            f"{self.saving_dir}qcew/{folder}/{file}",
                             f"{self.saving_dir}external/decode.json",
                         )
                         if df.empty:
