@@ -224,6 +224,70 @@ class cleanData:
         ).to_series().to_list()
 
         return df_filtered, naics
+    
+    def get_wages_data(self, time_frame: str,) -> pl.DataFrame:
+        naics_desc_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1)
+        invalid_naics_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2)
+
+        invalid_codes = (
+            invalid_naics_df
+            .select(pl.col("naics_data").cast(pl.String))
+            .to_series()
+            .to_list()
+        )
+
+        if time_frame == 'yearly':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_y.csv")
+            df = df.with_columns((pl.col('year').cast(pl.Int32)).alias('time_period'))
+        elif time_frame == 'fiscal':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_fy.csv")
+            df = df.with_columns((pl.col('f_year').cast(pl.Int32)).alias('time_period'))
+        elif time_frame == 'quarterly':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_q.csv")
+            df = df.with_columns(
+                (
+                    pl.col("year").cast(pl.Int32).cast(pl.String)
+                    + "-q"
+                    + pl.col("qtr").cast(pl.Int32).cast(pl.String)
+                ).alias('time_period')
+            )
+        else:
+            raise ValueError("Invalid time frame.")
+        
+        df = df.with_columns(
+            pl.col("naics_code").cast(pl.String).str.slice(0, 4).alias("naics_4digit")
+        )
+
+        df = df.join(
+            naics_desc_df.select([
+                pl.col("naics_code").cast(pl.String).alias("naics_4digit"),
+                "naics_desc"
+            ]),
+            on="naics_4digit",
+            how="left"
+        )
+        df = df.filter(pl.col("naics_4digit") != "0")
+        df = df.filter(~pl.col("naics_4digit").is_in(invalid_codes))
+
+        return df
+    
+    def filter_wages_data(self, time_frame: str, naics_desc: str, column: str):
+        df = self. get_wages_data(time_frame)
+        df_filtered = df.filter(pl.col("naics_desc") == naics_desc)
+        df_filtered = df_filtered.group_by(["time_period"]).agg([
+            pl.col(column).cast(pl.Float64).sum().alias('nominas')
+        ])
+        df_filtered = df_filtered.sort(['time_period'])
+
+        naics_desc = (
+            df.select(pl.col("naics_desc"))
+            .unique()
+            .sort("naics_desc")
+            .to_series()
+            .to_list()
+        )
+
+        return df_filtered, naics_desc
 
     def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
         """
