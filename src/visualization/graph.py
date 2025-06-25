@@ -104,10 +104,7 @@ class graphGenerator(cleanData):
             grid=True
         )
 
-        context = {
-            'naics_code': naics,
-        }
-        return chart, context
+        return chart, naics
         
 if __name__ == "__main__":
     g = graphGenerator()
