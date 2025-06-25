@@ -75,14 +75,14 @@ class graphGenerator(cleanData):
         }
         return chart, context
     
-    def gen_wages_graph(self, time_frame: str, naics_code : str, data_type: str) -> alt.Chart:
+    def gen_wages_graph(self, time_frame: str, naics_desc : str, data_type: str) -> alt.Chart:
         if data_type == 'nivel':
             column = 'taxable_wages'
         elif data_type == 'primera_diferencia':
             column = 'taxable_wages_diff'
         elif data_type == 'cambio_porcentual':
             column = 'taxable_wages_diff_p'
-        df, naics = self.filter_wages_data(time_frame, naics_code, column)
+        df, naics = self.filter_wages_data(time_frame, naics_desc, column)
 
         x_values = df.select("time_period").unique().to_series().to_list()
 
