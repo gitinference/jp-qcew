@@ -224,6 +224,45 @@ class cleanData:
         ).to_series().to_list()
 
         return df_filtered, naics
+    
+    def get_wages_data(self, time_frame: str,) -> pl.DataFrame:
+        if time_frame == 'yearly':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_y.csv")
+            df = df.with_columns((pl.col('year').cast(pl.Int32)).alias('time_period'))
+        elif time_frame == 'fiscal':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_fy.csv")
+            df = df.with_columns((pl.col('f_year').cast(pl.Int32)).alias('time_period'))
+        elif time_frame == 'quarterly':
+            df = pl.read_csv(f"{self.saving_dir}raw/data_q.csv")
+            df = df.with_columns(
+                (
+                    pl.col("year").cast(pl.Int32).cast(pl.String)
+                    + "-q"
+                    + pl.col("qtr").cast(pl.Int32).cast(pl.String)
+                ).alias('time_period')
+            )
+        else:
+            raise ValueError("Invalid time frame.")
+        return df
+    
+    def filter_wages_data(self, time_frame: str, naics_code: str, column: str):
+        df = self. get_wages_data(time_frame)
+        df_filtered = df.filter(pl.col("naics_code").cast(pl.String).str.starts_with(naics_code))
+        df_filtered = df_filtered.group_by(["time_period"]).agg([
+            pl.col(column).cast(pl.Float64).sum().alias('nominas')
+        ])
+        df_filtered = df_filtered.sort(['time_period'])
+
+        naics_4digit = (
+            df.select(pl.col("naics_code").cast(pl.String).str.slice(0, 4).alias("naics_4digit"))
+            .filter(pl.col("naics_4digit") != "0")
+            .unique()
+            .sort("naics_4digit")
+            .to_series()
+            .to_list()
+        )
+
+        return df_filtered, naics_4digit
 
     def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
         """

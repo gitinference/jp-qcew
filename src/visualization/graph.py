@@ -74,6 +74,40 @@ class graphGenerator(cleanData):
             'naics_code': naics,
         }
         return chart, context
+    
+    def gen_wages_graph(self, time_frame: str, naics_code : str, data_type: str) -> alt.Chart:
+        if data_type == 'nivel':
+            column = 'taxable_wages'
+        elif data_type == 'primera_diferencia':
+            column = 'taxable_wages_diff'
+        elif data_type == 'cambio_porcentual':
+            column = 'taxable_wages_diff_p'
+        df, naics = self.filter_wages_data(time_frame, naics_code, column)
+
+        x_values = df.select("time_period").unique().to_series().to_list()
+
+        if time_frame == "quarterly":
+            tick_vals = x_values[::3]
+        else:
+            tick_vals = x_values
+
+        chart = alt.Chart(df).mark_line().encode(
+            x=alt.X('time_period:N', title='', axis=alt.Axis(values=tick_vals)),
+            y=alt.Y(f'nominas:Q', title=''),
+            tooltip=['time_period', f'nominas']
+        ).properties(
+            width='container',
+        ).configure_view(
+            fill='#e6f7ff'
+        ).configure_axis(
+            gridColor='white',
+            grid=True
+        )
+
+        context = {
+            'naics_code': naics,
+        }
+        return chart, context
         
 if __name__ == "__main__":
     g = graphGenerator()
