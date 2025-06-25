@@ -175,6 +175,7 @@ cython_debug/
 data/raw/
 data/processed/
 data/external/
+data/qcew/
 # ignore mac files
 *.DS_Store
 

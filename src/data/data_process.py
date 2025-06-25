@@ -53,14 +53,14 @@ class cleanData:
         """
         if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
             init_qcew_table(self.data_file)
-            for folder in os.listdir(f"{self.saving_dir}raw"):
+            for folder in os.listdir(f"{self.saving_dir}qcew"):
                 count = 0
                 if folder == ".gitkeep" or folder == ".DS_Store":
                     continue
                 else:
-                    for file in os.listdir(f"{self.saving_dir}raw/{folder}"):
+                    for file in os.listdir(f"{self.saving_dir}qcew/{folder}"):
                         df = self.clean_txt(
-                            f"{self.saving_dir}raw/{folder}/{file}",
+                            f"{self.saving_dir}qcew/{folder}/{file}",
                             f"{self.saving_dir}external/decode.json",
                         )
                         if df.empty:
@@ -141,7 +141,7 @@ class cleanData:
 
         return gdf
 
-    def group_by_naics_code(self) -> pl.DataFrame:
+    def group_by_naics_code(self, time_frame: str) -> pl.DataFrame:
         """
         This function aggregate the data by year, quarter, and first 4 digits of the NAICS code.
 
@@ -153,10 +153,15 @@ class cleanData:
         -------
         it.Table
         """
-        df = self.conn.sql("SELECT * FROM qcewtable").pl()
+        df = self.conn.sql(
+            """
+            SELECT year,qtr,naics_code,first_month_employment,second_month_employment,third_month_employment,total_wages FROM qcewtable
+                WHERE year>=2001;
+            """
+        ).pl()
 
         df = df.with_columns(
-            total_wages=(
+            total_employment=(
                 pl.col("first_month_employment")
                 + pl.col("second_month_employment")
                 + pl.col("third_month_employment")
@@ -167,23 +172,38 @@ class cleanData:
         df = df.with_columns(
             naics4=pl.col("naics_code").str.slice(0, 4),
             dummy=pl.lit(1),
+            fiscal_year=pl.when(pl.col("qtr") >= 3)
+            .then(pl.col("year") + 1)
+            .when(pl.col("qtr") <= 2)
+            .then(pl.col("year"))
+            .otherwise(999),
         )
         df = df.filter(pl.col("naics4") != "")
 
+        match time_frame:
+            case "quarterly":
+                grouping = ["year", "qtr", "naics4"]
+            case "yearly":
+                grouping = ["year", "naics4"]
+            case "fiscal":
+                grouping = ["fiscal_year", "naics4"]
+            case _:
+                raise ValueError("ERROR: invalid timeframe")
+
         # Group by the specified columns and aggregate
-        df = df.group_by(["year", "qtr", "first_4_naics_code"]).agg(
-            total_wages_sum=pl.col("total_wages").sum(),
-            total_employment_sum=pl.col("total_employment").mean(),
-            dummy_sum=pl.col("dummy").sum(),
+        df = df.group_by(grouping).agg(
+            total_wages=pl.col("total_wages").sum(),
+            total_employment=pl.col("total_employment").mean(),
+            total_industries=pl.col("dummy").sum(),
         )
 
-        df = df.filter(pl.col("dummy_sum") > 4)
+        df = df.filter(pl.col("total_industries") > 4)
 
         # Step 2: Add calculated columns for contributions
         df = df.with_columns(
-            fondo_contributions=pl.col("fondo_contributions") * 0.014,
-            medicare_contributions=pl.col("medicare_contributions") * 0.0145,
-            ssn_contributions=pl.col("ssn_contributions") * 0.062,
+            fondo_contributions=pl.col("total_wages") * 0.014,
+            medicare_contributions=pl.col("total_wages") * 0.0145,
+            ssn_contributions=pl.col("total_wages") * 0.062,
         )
 
         return df
@@ -200,28 +220,39 @@ class cleanData:
         df2 = df.join(df_qcew, predicates=("first_4_naics_code"))
 
         return df2
-    
+
     def get_naics_data(self, naics_code: str) -> pl.DataFrame:
         current_path = os.path.dirname(os.path.abspath(__file__))
         base_dir = os.path.abspath(os.path.join(current_path, "..", ".."))
 
-        naics_data = pl.read_parquet(f"{base_dir}/{self.saving_dir}external/naics4_df.parquet")
-    
+        naics_data = pl.read_parquet(
+            f"{base_dir}/{self.saving_dir}external/naics4_df.parquet"
+        )
+
         df_filtered = naics_data.filter(pl.col("first_4_naics_code") == naics_code)
         df_filtered = df_filtered.filter(pl.col("year") < 2024)
 
-        df_filtered = df_filtered.with_columns([
-            pl.format("Q{} {}", pl.col("year"), pl.col("qtr"),).alias("x_axis")
-        ])
+        df_filtered = df_filtered.with_columns(
+            [
+                pl.format(
+                    "Q{} {}",
+                    pl.col("year"),
+                    pl.col("qtr"),
+                ).alias("x_axis")
+            ]
+        )
         df_filtered = df_filtered.sort(["x_axis"], descending=False)
 
         naics = (
-            naics_data
-            .filter(pl.col("first_4_naics_code") != "0")
-            .select("first_4_naics_code")
-            .unique()
-            .sort(["first_4_naics_code"], descending=False)
-        ).to_series().to_list()
+            (
+                naics_data.filter(pl.col("first_4_naics_code") != "0")
+                .select("first_4_naics_code")
+                .unique()
+                .sort(["first_4_naics_code"], descending=False)
+            )
+            .to_series()
+            .to_list()
+        )
 
         return df_filtered, naics
 
