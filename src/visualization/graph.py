@@ -69,9 +69,15 @@ class graphGenerator(cleanData):
         if data_type == 'nivel':
             column = selected_column
         elif data_type == 'primera_diferencia':
-            column = f'{selected_column}_diff'
+            if selected_column == 'average_salary':
+                column = 'salary_diff'
+            else:
+                column = f'{selected_column}_diff'
         elif data_type == 'cambio_porcentual':
-            column = f'{selected_column}_diff_p'
+            if selected_column == 'average_salary':
+                column = 'salary_diff_p'
+            else:
+                column = f'{selected_column}_diff_p'
         df, naics = self.filter_wages_data(time_frame, naics_desc, column)
 
         columns = ['taxable_wages', 'average_salary', 'social_security', 'medicare', 'contributions_due']

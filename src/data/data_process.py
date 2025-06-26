@@ -292,6 +292,13 @@ class cleanData:
     
     def filter_wages_data(self, time_frame: str, naics_desc: str, column: str):
         df = self. get_wages_data(time_frame)
+        df = df.with_columns(
+            pl.concat_str([
+                pl.col("naics_4digit").cast(pl.Utf8),
+                pl.lit("--"),
+                pl.col("naics_desc")
+            ]).alias("naics_desc")
+        )
         df_filtered = df.filter(pl.col("naics_desc") == naics_desc)
         df_filtered = df_filtered.group_by(["time_period"]).agg([
             pl.col(column).cast(pl.Float64).sum().alias('nominas')
