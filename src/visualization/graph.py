@@ -65,14 +65,20 @@ class graphGenerator(cleanData):
         }
         return chart, context
     
-    def gen_wages_graph(self, time_frame: str, naics_desc : str, data_type: str) -> alt.Chart:
+    def gen_wages_graph(self, time_frame: str, naics_desc : str, data_type: str, selected_column: str) -> alt.Chart:
         if data_type == 'nivel':
-            column = 'taxable_wages'
+            column = selected_column
         elif data_type == 'primera_diferencia':
-            column = 'taxable_wages_diff'
+            column = f'{selected_column}_diff'
         elif data_type == 'cambio_porcentual':
-            column = 'taxable_wages_diff_p'
+            column = f'{selected_column}_diff_p'
         df, naics = self.filter_wages_data(time_frame, naics_desc, column)
+
+        columns = ['taxable_wages', 'average_salary', 'social_security', 'medicare', 'contributions_due']
+        columns = [
+            {"value": col, "label": col.replace("_", " ").capitalize()}
+            for col in columns
+        ]
 
         x_values = df.select("time_period").unique().to_series().to_list()
 
@@ -82,8 +88,8 @@ class graphGenerator(cleanData):
             tick_vals = x_values
 
         chart = alt.Chart(df).mark_line().encode(
-            x=alt.X('time_period:N', title='Time Period', axis=alt.Axis(values=tick_vals)),
-            y=alt.Y('nominas:Q', title='Nominas'),
+            x=alt.X('time_period:N', title='', axis=alt.Axis(values=tick_vals)),
+            y=alt.Y('nominas:Q', title=''),
             tooltip=[
                 alt.Tooltip('time_period', title="Time Period"),
                 alt.Tooltip('nominas', title="Wages")
@@ -97,7 +103,7 @@ class graphGenerator(cleanData):
             grid=True
         )
 
-        return chart, naics
+        return chart, naics, columns
         
 if __name__ == "__main__":
     g = graphGenerator()
