@@ -206,8 +206,28 @@ class cleanData:
         base_dir = os.path.abspath(os.path.join(current_path, "..", ".."))
 
         naics_data = pl.read_parquet(f"{base_dir}/{self.saving_dir}external/naics4_df.parquet")
+        naics_desc_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1)
+        invalid_naics_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2)
+
+        invalid_codes = (
+            invalid_naics_df
+            .select(pl.col("naics_data").cast(pl.String))
+            .to_series()
+            .to_list()
+        )
+
+        naics_data = naics_data.join(
+            naics_desc_df.select([
+                pl.col("naics_code").cast(pl.String).alias("first_4_naics_code"),
+                "naics_desc"
+            ]),
+            on="first_4_naics_code",
+            how="left"
+        )
+        naics_data = naics_data.filter(pl.col("first_4_naics_code") != "0")
+        naics_data = naics_data.filter(~pl.col("first_4_naics_code").is_in(invalid_codes))
     
-        df_filtered = naics_data.filter(pl.col("first_4_naics_code") == naics_code)
+        df_filtered = naics_data.filter(pl.col("naics_desc") == naics_code)
         df_filtered = df_filtered.filter(pl.col("year") < 2024)
 
         df_filtered = df_filtered.with_columns([
@@ -217,10 +237,9 @@ class cleanData:
 
         naics = (
             naics_data
-            .filter(pl.col("first_4_naics_code") != "0")
-            .select("first_4_naics_code")
+            .select("naics_desc")
             .unique()
-            .sort(["first_4_naics_code"], descending=False)
+            .sort(["naics_desc"], descending=False)
         ).to_series().to_list()
 
         return df_filtered, naics
