@@ -30,7 +30,10 @@ class graphGenerator(cleanData):
         chart = alt.Chart(filtered_pd).mark_line().encode(
             x=alt.X('year_qtr', title='Year', sort=list(filtered_pd['year_qtr'])),
             y=alt.Y('total_employment_sum:Q', title='Total Employment'),
-            tooltip=['year_qtr', 'total_employment_sum']
+            tooltip=[
+                alt.Tooltip('year_qtr', title='Year and Quarter'),
+                alt.Tooltip('total_employment_sum', title='Total Employment Sum')
+                ]
             ).properties(
                 title='Employment Trends for NAICS 5412',
                 width=1000,
@@ -42,34 +45,21 @@ class graphGenerator(cleanData):
     def gen_naics_graph(self, naics_code : str) -> alt.Chart:
         df_filtered, naics = self.get_naics_data(naics_code)
 
-        line = alt.Chart(df_filtered).mark_line().encode(
+        chart = alt.Chart(df_filtered).mark_line().encode(
             x=alt.X('x_axis:N', title='Year'),
             y=alt.Y('total_employment_sum:Q', title='Total Employment'),
-            tooltip=['x_axis', 'total_employment_sum']
-        )
-        points = alt.Chart(df_filtered).mark_point(
-            color='darkblue', 
-            size=60,
-            filled=True    
-        ).encode(
-            x='x_axis:N',
-            y='total_employment_sum:Q',
-            tooltip=['x_axis', 'total_employment_sum']
-        )
-        chart = (line + points).properties(
-            title=f'Employment in the US by Quarter for NAICS {naics_code}',
+            tooltip=[
+                    alt.Tooltip("x_axis", title="Time Period"),
+                    alt.Tooltip("total_employment_sum", title="Total Employment")]
+        ).properties(
             width='container',
         ).configure_view(
             fill='#e6f7ff'
         ).configure_axis(
             gridColor='white',
             grid=True
-        ).configure_title(
-            anchor='start',     
-            fontSize=16,         
-            color='#333333',      
-            offset=30           
         )
+        
         context = {
             'naics_code': naics,
         }
@@ -92,9 +82,12 @@ class graphGenerator(cleanData):
             tick_vals = x_values
 
         chart = alt.Chart(df).mark_line().encode(
-            x=alt.X('time_period:N', title='', axis=alt.Axis(values=tick_vals)),
-            y=alt.Y(f'nominas:Q', title=''),
-            tooltip=['time_period', f'nominas']
+            x=alt.X('time_period:N', title='Time Period', axis=alt.Axis(values=tick_vals)),
+            y=alt.Y('nominas:Q', title='Nominas'),
+            tooltip=[
+                alt.Tooltip('time_period', title="Time Period"),
+                alt.Tooltip('nominas', title="Wages")
+                ]
         ).properties(
             width='container',
         ).configure_view(
