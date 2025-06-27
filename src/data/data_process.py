@@ -299,6 +299,10 @@ class cleanData:
                 pl.col("naics_desc")
             ]).alias("naics_desc")
         )
+        df = df.filter(
+            pl.col(column).is_not_null() &
+            (pl.col(column).cast(pl.Utf8).str.strip_chars() != "")
+        )
         df_filtered = df.filter(pl.col("naics_desc") == naics_desc)
         df_filtered = df_filtered.group_by(["time_period"]).agg([
             pl.col(column).cast(pl.Float64).sum().alias('nominas')
