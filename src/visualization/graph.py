@@ -73,14 +73,22 @@ class graphGenerator(cleanData):
                 column = 'salary_diff'
             else:
                 column = f'{selected_column}_diff'
+            if selected_column == 'total_wages':
+                column = 'payroll_diff'
+            else:
+                column = f'{selected_column}_diff'
         elif data_type == 'cambio_porcentual':
             if selected_column == 'average_salary':
                 column = 'salary_diff_p'
             else:
                 column = f'{selected_column}_diff_p'
+            if selected_column == 'total_wages':
+                column = 'payroll_diff_p'
+            else:
+                column = f'{selected_column}_diff_p'
         df, naics = self.filter_wages_data(time_frame, naics_desc, column)
 
-        columns = ['taxable_wages', 'average_salary', 'social_security', 'medicare', 'contributions_due']
+        columns = ['taxable_wages', 'total_wages', 'average_salary', 'social_security', 'medicare', 'contributions_due']
         columns = [
             {"value": col, "label": col.replace("_", " ").capitalize()}
             for col in columns
