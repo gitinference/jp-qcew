@@ -294,8 +294,9 @@ class cleanData:
         df = self. get_wages_data(time_frame)
         df = df.with_columns(
             pl.concat_str([
+                pl.lit("(N"),
                 pl.col("naics_4digit").cast(pl.Utf8),
-                pl.lit("--"),
+                pl.lit(") "),
                 pl.col("naics_desc")
             ]).alias("naics_desc")
         )
