@@ -71,18 +71,14 @@ class graphGenerator(cleanData):
         elif data_type == 'primera_diferencia':
             if selected_column == 'average_salary':
                 column = 'salary_diff'
-            else:
-                column = f'{selected_column}_diff'
-            if selected_column == 'total_wages':
+            elif selected_column == 'total_wages':
                 column = 'payroll_diff'
             else:
                 column = f'{selected_column}_diff'
         elif data_type == 'cambio_porcentual':
             if selected_column == 'average_salary':
                 column = 'salary_diff_p'
-            else:
-                column = f'{selected_column}_diff_p'
-            if selected_column == 'total_wages':
+            elif selected_column == 'total_wages':
                 column = 'payroll_diff_p'
             else:
                 column = f'{selected_column}_diff_p'
