@@ -181,7 +181,7 @@ data/qcew
 
 # ignore quarter files 
 notebooks/*
-!notebooks/*.qmd
+!notebooks/*.ipynb
 # vscode
 .vscode
 data_process.log
