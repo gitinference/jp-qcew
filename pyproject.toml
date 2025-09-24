@@ -19,4 +19,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["jupyter>=1.1.1", "matplotlib>=3.10.0", "pynvim>=0.5.2"]
+dev = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.0",
+    "pre-commit>=4.3.0",
+    "pynvim>=0.5.2",
+]

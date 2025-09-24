@@ -49,7 +49,7 @@ class cleanData:
 
         Returns
         -------
-        None
+        Returns a polars DataFrame containing all the inserted data
         """
         if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
             init_qcew_table(self.data_file)
