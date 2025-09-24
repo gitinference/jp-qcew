@@ -45,21 +45,35 @@ class graphGenerator(cleanData):
     def gen_naics_graph(self, naics_code : str) -> alt.Chart:
         df_filtered, naics = self.get_naics_data(naics_code)
 
-        chart = alt.Chart(df_filtered).mark_line().encode(
+        line = alt.Chart(df_filtered).mark_line().encode(
             x=alt.X('x_axis:N', title='Year'),
             y=alt.Y('total_employment_sum:Q', title='Total Employment'),
-            tooltip=[
-                    alt.Tooltip("x_axis", title="Time Period"),
-                    alt.Tooltip("total_employment_sum", title="Total Employment")]
-        ).properties(
-            width='container',
+            tooltip=['x_axis', 'total_employment_sum']
+        )
+        points = alt.Chart(df_filtered).mark_point(
+            color='darkblue', 
+            size=60,
+            filled=True    
+        ).encode(
+            x='x_axis:N',
+            y='total_employment_sum:Q',
+            tooltip=['x_axis', 'total_employment_sum']
+        )
+        chart = (line + points).properties(
+            title=f'Employment in the US by Quarter for NAICS {naics_code}',
+            width=1000,
+            height=200
         ).configure_view(
             fill='#e6f7ff'
         ).configure_axis(
             gridColor='white',
             grid=True
+        ).configure_title(
+            anchor='start',     
+            fontSize=16,         
+            color='#333333',      
+            offset=30           
         )
-        
         context = {
             'naics_code': naics,
         }

@@ -320,6 +320,7 @@ class cleanData:
 
         return df_filtered, naics_desc
 
+
     def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
         """
         Pulls a file from a URL and saves it in the filename. Used by the class to pull external files.
