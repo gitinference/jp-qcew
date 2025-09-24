@@ -30,7 +30,10 @@ class graphGenerator(cleanData):
         chart = alt.Chart(filtered_pd).mark_line().encode(
             x=alt.X('year_qtr', title='Year', sort=list(filtered_pd['year_qtr'])),
             y=alt.Y('total_employment_sum:Q', title='Total Employment'),
-            tooltip=['year_qtr', 'total_employment_sum']
+            tooltip=[
+                alt.Tooltip('year_qtr', title='Year and Quarter'),
+                alt.Tooltip('total_employment_sum', title='Total Employment Sum')
+                ]
             ).properties(
                 title='Employment Trends for NAICS 5412',
                 width=1000,
@@ -75,6 +78,56 @@ class graphGenerator(cleanData):
             'naics_code': naics,
         }
         return chart, context
+    
+    def gen_wages_graph(self, time_frame: str, naics_desc : str, data_type: str, selected_column: str) -> alt.Chart:
+        if data_type == 'nivel':
+            column = selected_column
+        elif data_type == 'primera_diferencia':
+            if selected_column == 'average_salary':
+                column = 'salary_diff'
+            elif selected_column == 'total_wages':
+                column = 'payroll_diff'
+            else:
+                column = f'{selected_column}_diff'
+        elif data_type == 'cambio_porcentual':
+            if selected_column == 'average_salary':
+                column = 'salary_diff_p'
+            elif selected_column == 'total_wages':
+                column = 'payroll_diff_p'
+            else:
+                column = f'{selected_column}_diff_p'
+        df, naics = self.filter_wages_data(time_frame, naics_desc, column)
+
+        columns = ['taxable_wages', 'total_wages', 'average_salary', 'social_security', 'medicare', 'contributions_due']
+        columns = [
+            {"value": col, "label": col.replace("_", " ").capitalize()}
+            for col in columns
+        ]
+
+        x_values = df.select("time_period").unique().to_series().to_list()
+
+        if time_frame == "quarterly":
+            tick_vals = x_values[::3]
+        else:
+            tick_vals = x_values
+
+        chart = alt.Chart(df).mark_line().encode(
+            x=alt.X('time_period:N', title='', axis=alt.Axis(values=tick_vals)),
+            y=alt.Y('nominas:Q', title=''),
+            tooltip=[
+                alt.Tooltip('time_period', title="Time Period"),
+                alt.Tooltip('nominas', title="Wages")
+                ]
+        ).properties(
+            width='container',
+        ).configure_view(
+            fill='#e6f7ff'
+        ).configure_axis(
+            gridColor='white',
+            grid=True
+        )
+
+        return chart, naics, columns
         
 if __name__ == "__main__":
     g = graphGenerator()
