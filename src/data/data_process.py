@@ -1,4 +1,4 @@
-from ..models import init_qcew_table, get_conn
+from ..sql.models import init_qcew_table, get_conn
 from tqdm import tqdm
 import polars as pl
 import requests
@@ -51,6 +51,7 @@ class cleanData:
         """
         if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
             init_qcew_table(self.data_file)
+        if self.conn.sql("SELECT COUNT(*) FROM qcewtable;").pl().item() == 0:
             for folder in os.listdir(f"{self.saving_dir}qcew"):
                 count = 0
                 if folder == ".gitkeep" or folder == ".DS_Store":
@@ -61,7 +62,6 @@ class cleanData:
                             f"{self.saving_dir}qcew/{folder}/{file}",
                             f"{self.saving_dir}external/decode.json",
                         )
-                        print(df.is_empty())
                         if df.is_empty():
                             logging.warning(f"File {file} is empty.")
                             continue
