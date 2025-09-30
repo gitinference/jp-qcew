@@ -1,8 +1,6 @@
-import geopandas as gpd
 from ..models import init_qcew_table, get_conn
 from tqdm import tqdm
 import polars as pl
-import pandas as pd
 import requests
 import logging
 import json
@@ -35,7 +33,7 @@ class cleanData:
             os.makedirs(self.saving_dir + "external")
         if not os.path.exists(f"{self.saving_dir}external/decode.json"):
             self.pull_file(
-                url="https://raw.githubusercontent.com/EconLabs/jp-QCEW/refs/heads/main/data/external/decode.json",
+                url="https://raw.githubusercontent.com/gitinference/jp-QCEW/refs/heads/main/data/external/decode.json",
                 filename=f"{self.saving_dir}external/decode.json",
             )
 
@@ -63,7 +61,8 @@ class cleanData:
                             f"{self.saving_dir}qcew/{folder}/{file}",
                             f"{self.saving_dir}external/decode.json",
                         )
-                        if df.empty:
+                        print(df.is_empty())
+                        if df.is_empty():
                             logging.warning(f"File {file} is empty.")
                             continue
                         else:
@@ -78,7 +77,7 @@ class cleanData:
         else:
             return self.conn.sql("SELECT * FROM qcewtable").pl()
 
-    def clean_txt(self, dev_file: str, decode_path: str) -> pd.DataFrame:
+    def clean_txt(self, dev_file: str, decode_path: str) -> pl.DataFrame:
         """
         This function reads the raw txt files and cleans them up based on the decode file.
 
@@ -128,18 +127,9 @@ class cleanData:
             pl.col("third_month_employment").cast(pl.Int64, strict=False),
             pl.col("total_wages").cast(pl.Int64, strict=False),
             pl.col("taxable_wages").cast(pl.Int64, strict=False),
-        ).to_pandas()
-
-        # Convert to GeoDataFrame
-        gdf = gpd.GeoDataFrame(
-            df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:3454"
         )
-        gdf = gdf.rename(columns={"geometry": "geom"}).drop(
-            columns=["longitude", "latitude"]
-        )
-        gdf["geom"] = gdf["geom"].apply(lambda x: x.wkt)
 
-        return gdf
+        return df
 
     def group_by_naics_code(self) -> pl.DataFrame:
         """
@@ -200,115 +190,143 @@ class cleanData:
         df2 = df.join(df_qcew, predicates=("first_4_naics_code"))
 
         return df2
-    
+
     def get_naics_data(self, naics_code: str) -> pl.DataFrame:
         current_path = os.path.dirname(os.path.abspath(__file__))
         base_dir = os.path.abspath(os.path.join(current_path, "..", ".."))
 
-        naics_data = pl.read_parquet(f"{base_dir}/{self.saving_dir}external/naics4_df.parquet")
-        naics_desc_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1)
-        invalid_naics_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2)
+        naics_data = pl.read_parquet(
+            f"{base_dir}/{self.saving_dir}external/naics4_df.parquet"
+        )
+        naics_desc_df = pl.read_excel(
+            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1
+        )
+        invalid_naics_df = pl.read_excel(
+            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2
+        )
 
         invalid_codes = (
-            invalid_naics_df
-            .select(pl.col("naics_data").cast(pl.String))
+            invalid_naics_df.select(pl.col("naics_data").cast(pl.String))
             .to_series()
             .to_list()
         )
 
         naics_data = naics_data.join(
-            naics_desc_df.select([
-                pl.col("naics_code").cast(pl.String).alias("first_4_naics_code"),
-                "naics_desc"
-            ]),
+            naics_desc_df.select(
+                [
+                    pl.col("naics_code").cast(pl.String).alias("first_4_naics_code"),
+                    "naics_desc",
+                ]
+            ),
             on="first_4_naics_code",
-            how="left"
+            how="left",
         )
         naics_data = naics_data.filter(pl.col("first_4_naics_code") != "0")
-        naics_data = naics_data.filter(~pl.col("first_4_naics_code").is_in(invalid_codes))
-    
+        naics_data = naics_data.filter(
+            ~pl.col("first_4_naics_code").is_in(invalid_codes)
+        )
+
         df_filtered = naics_data.filter(pl.col("naics_desc") == naics_code)
         df_filtered = df_filtered.filter(pl.col("year") < 2024)
 
-        df_filtered = df_filtered.with_columns([
-            pl.format("Q{} {}", pl.col("year"), pl.col("qtr"),).alias("x_axis")
-        ])
+        df_filtered = df_filtered.with_columns(
+            [
+                pl.format(
+                    "Q{} {}",
+                    pl.col("year"),
+                    pl.col("qtr"),
+                ).alias("x_axis")
+            ]
+        )
         df_filtered = df_filtered.sort(["x_axis"], descending=False)
 
         naics = (
-            naics_data
-            .select("naics_desc")
-            .unique()
-            .sort(["naics_desc"], descending=False)
-        ).to_series().to_list()
-
-        return df_filtered, naics
-    
-    def get_wages_data(self, time_frame: str,) -> pl.DataFrame:
-        naics_desc_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1)
-        invalid_naics_df = pl.read_excel(f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2)
-
-        invalid_codes = (
-            invalid_naics_df
-            .select(pl.col("naics_data").cast(pl.String))
+            (
+                naics_data.select("naics_desc")
+                .unique()
+                .sort(["naics_desc"], descending=False)
+            )
             .to_series()
             .to_list()
         )
 
-        if time_frame == 'yearly':
+        return df_filtered, naics
+
+    def get_wages_data(
+        self,
+        time_frame: str,
+    ) -> pl.DataFrame:
+        naics_desc_df = pl.read_excel(
+            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1
+        )
+        invalid_naics_df = pl.read_excel(
+            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2
+        )
+
+        invalid_codes = (
+            invalid_naics_df.select(pl.col("naics_data").cast(pl.String))
+            .to_series()
+            .to_list()
+        )
+
+        if time_frame == "yearly":
             df = pl.read_csv(f"{self.saving_dir}raw/data_y.csv")
-            df = df.with_columns((pl.col('year').cast(pl.Int32)).alias('time_period'))
-        elif time_frame == 'fiscal':
+            df = df.with_columns((pl.col("year").cast(pl.Int32)).alias("time_period"))
+        elif time_frame == "fiscal":
             df = pl.read_csv(f"{self.saving_dir}raw/data_fy.csv")
-            df = df.with_columns((pl.col('f_year').cast(pl.Int32)).alias('time_period'))
-        elif time_frame == 'quarterly':
+            df = df.with_columns((pl.col("f_year").cast(pl.Int32)).alias("time_period"))
+        elif time_frame == "quarterly":
             df = pl.read_csv(f"{self.saving_dir}raw/data_q.csv")
             df = df.with_columns(
                 (
                     pl.col("year").cast(pl.Int32).cast(pl.String)
                     + "-q"
                     + pl.col("qtr").cast(pl.Int32).cast(pl.String)
-                ).alias('time_period')
+                ).alias("time_period")
             )
         else:
             raise ValueError("Invalid time frame.")
-        
+
         df = df.with_columns(
             pl.col("naics_code").cast(pl.String).str.slice(0, 4).alias("naics_4digit")
         )
 
         df = df.join(
-            naics_desc_df.select([
-                pl.col("naics_code").cast(pl.String).alias("naics_4digit"),
-                "naics_desc"
-            ]),
+            naics_desc_df.select(
+                [
+                    pl.col("naics_code").cast(pl.String).alias("naics_4digit"),
+                    "naics_desc",
+                ]
+            ),
             on="naics_4digit",
-            how="left"
+            how="left",
         )
         df = df.filter(pl.col("naics_4digit") != "0")
         df = df.filter(~pl.col("naics_4digit").is_in(invalid_codes))
 
         return df
-    
+
     def filter_wages_data(self, time_frame: str, naics_desc: str, column: str):
-        df = self. get_wages_data(time_frame)
+        df = self.get_wages_data(time_frame)
         df = df.with_columns(
-            pl.concat_str([
-                pl.lit("(N"),
-                pl.col("naics_4digit").cast(pl.Utf8),
-                pl.lit(") "),
-                pl.col("naics_desc")
-            ]).alias("naics_desc")
+            pl.concat_str(
+                [
+                    pl.lit("(N"),
+                    pl.col("naics_4digit").cast(pl.Utf8),
+                    pl.lit(") "),
+                    pl.col("naics_desc"),
+                ]
+            ).alias("naics_desc")
         )
         df = df.filter(
-            pl.col(column).is_not_null() &
-            (pl.col(column).cast(pl.Utf8).str.strip_chars() != "")
+            pl.col(column).is_not_null()
+            & (pl.col(column).cast(pl.Utf8).str.strip_chars() != "")
         )
         df_filtered = df.filter(pl.col("naics_desc") == naics_desc)
-        df_filtered = df_filtered.group_by(["time_period"]).agg([
-            pl.col(column).cast(pl.Float64).sum().alias('nominas')
-        ])
-        df_filtered = df_filtered.sort(['time_period'])
+        df_filtered = df_filtered.group_by(["time_period"]).agg(
+            [pl.col(column).cast(pl.Float64).sum().alias("nominas")]
+        )
+        df_filtered = df_filtered.sort(["time_period"])
 
         naics_desc = (
             df.select(pl.col("naics_desc"))
@@ -319,7 +337,6 @@ class cleanData:
         )
 
         return df_filtered, naics_desc
-
 
     def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
         """
