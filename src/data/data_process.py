@@ -77,13 +77,13 @@ class cleanData:
         else:
             return self.conn.sql("SELECT * FROM qcewtable").pl()
 
-    def clean_txt(self, dev_file: str, decode_path: str) -> pl.DataFrame:
+    def clean_txt(self, file_path: str, decode_path: str) -> pl.DataFrame:
         """
         This function reads the raw txt files and cleans them up based on the decode file.
 
         Parameters
         ----------
-        dev_file: str
+        file_path: str
             The path to the raw txt file.
         decode_path: str
             The path to the decode file.
@@ -92,13 +92,12 @@ class cleanData:
         -------
         pd.DataFrame
         """
-        df = pl.read_csv(
-            dev_file,
-            separator="\n",
-            has_header=False,
-            encoding="latin1",
-            new_columns=["full_str"],
-        )
+
+        with open(file_path, "r", encoding="latin1") as f:
+            lines = [line.rstrip("\n") for line in f]
+
+        # Create a Polars DataFrame with a single column: "raw_line"
+        df = pl.DataFrame({"raw_line": lines})
 
         decode_file = json.load(open(decode_path, "r"))
         column_names = list(decode_file.keys())
@@ -111,10 +110,10 @@ class cleanData:
         # Use Polars to slice each field from the full string
         df = df.with_columns(
             [
-                pl.col("full_str").str.slice(start, length).str.strip_chars().alias(col)
+                pl.col("raw_line").str.slice(start, length).str.strip_chars().alias(col)
                 for (start, length), col in zip(slice_tuples, column_names)
             ]
-        ).drop("full_str")
+        ).drop("raw_line")
 
         # Cast numeric fields
         df = df.with_columns(
