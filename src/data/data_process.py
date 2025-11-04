@@ -1,4 +1,5 @@
 from ..sql.models import init_qcew_table, get_conn
+import duckdb
 from tqdm import tqdm
 import polars as pl
 import requests
@@ -16,7 +17,7 @@ class cleanData:
     ):
         self.saving_dir = saving_dir
         self.data_file = database_file
-        self.conn = get_conn(self.data_file)
+        self.conn = duckdb.connect()
 
         logging.basicConfig(
             level=logging.INFO,
@@ -49,33 +50,36 @@ class cleanData:
         -------
         Returns a polars DataFrame containing all the inserted data
         """
-        if "qcewtable" not in self.conn.sql("SHOW TABLES;").df().get("name").tolist():
-            init_qcew_table(self.data_file)
-        if self.conn.sql("SELECT COUNT(*) FROM qcewtable;").pl().item() == 0:
-            for folder in os.listdir(f"{self.saving_dir}qcew"):
-                count = 0
-                if folder == ".gitkeep" or folder == ".DS_Store":
-                    continue
-                else:
-                    for file in os.listdir(f"{self.saving_dir}qcew/{folder}"):
-                        df = self.clean_txt(
-                            f"{self.saving_dir}qcew/{folder}/{file}",
-                            f"{self.saving_dir}external/decode.json",
+        for folder in os.listdir(f"{self.saving_dir}qcew"):
+            count = 0
+            if folder == ".gitkeep" or folder == ".DS_Store":
+                continue
+            else:
+                for file in os.listdir(f"{self.saving_dir}qcew/{folder}"):
+                    if os.path.exists(
+                        f"{self.saving_dir}processed/pr-qcew-{folder}-{count}"
+                    ):
+                        continue
+                    df = self.clean_txt(
+                        f"{self.saving_dir}qcew/{folder}/{file}",
+                        f"{self.saving_dir}external/decode.json",
+                    )
+                    if df.is_empty():
+                        logging.warning(f"File {file} is empty.")
+                        continue
+                    else:
+                        year = df.select(pl.col("year").mode()).item()
+                        qtr = df.select(pl.col("qtr").mode()).item()
+                        df.write_parquet(
+                            file=f"{self.saving_dir}processed/pr-qcew-{year}-{qtr}.parquet"
                         )
-                        if df.is_empty():
-                            logging.warning(f"File {file} is empty.")
-                            continue
-                        else:
-                            self.conn.sql(
-                                "INSERT INTO 'qcewtable' BY NAME SELECT * FROM df"
-                            )
-                            logging.info(
-                                f"File {file} for {folder} has been inserted into the database."
-                            )
-                            count += 1
-            return self.conn.sql("SELECT * FROM qcewtable").pl()
-        else:
-            return self.conn.sql("SELECT * FROM qcewtable").pl()
+                        logging.info(
+                            f"File {file} for {folder} has been inserted into the database."
+                        )
+                        count += 1
+        return self.conn.execute(
+            f"SELECT * FROM '{self.saving_dir}processed/pr-qcew-*.parquet';"
+        ).pl()
 
     def clean_txt(self, file_path: str, decode_path: str) -> pl.DataFrame:
         """

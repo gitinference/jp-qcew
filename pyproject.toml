@@ -19,8 +19,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "cairosvg>=2.8.2",
   "jupyter>=1.1.1",
+  "jupytext>=1.18.1",
+  "kaleido>=1.1.0",
   "matplotlib>=3.10.0",
+  "pnglatex>=1.1",
   "pre-commit>=4.3.0",
   "pynvim>=0.5.2",
+  "pyperclip>=1.11.0",
+  "ruff>=0.14.3",
 ]
