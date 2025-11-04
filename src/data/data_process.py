@@ -1,4 +1,3 @@
-from ..sql.models import init_qcew_table, get_conn
 import duckdb
 from tqdm import tqdm
 import polars as pl
@@ -146,7 +145,7 @@ class cleanData:
         -------
         it.Table
         """
-        df = self.conn.sql("SELECT * FROM qcewtable").pl()
+        df = self.conn.execute("SELECT * FROM qcewtable").pl()
 
         df = df.with_columns(
             total_wages=(
@@ -182,6 +181,8 @@ class cleanData:
         return df
 
     def unique_naics_code(self):
+        # WARNING:This is old deprecated code this should be updates
+        # TODO: update function to use duckdb
         df_qcew = self.group_by_naics_code()
 
         # Load the data
@@ -195,6 +196,8 @@ class cleanData:
         return df2
 
     def get_naics_data(self, naics_code: str) -> pl.DataFrame:
+        # WARNING:This is old deprecated code this should be updates
+        # TODO: update function to use duckdb
         current_path = os.path.dirname(os.path.abspath(__file__))
         base_dir = os.path.abspath(os.path.join(current_path, "..", ".."))
 
