@@ -1,6 +1,6 @@
 [project]
 name = "jp-qcew"
-version = "2.1.0"
+version = "2.2.0"
 authors = [{ name = "Alejandro Ousland", email = "alejandro.ouslan@upr.edu" }]
 description = "Add your description here"
 readme = "README.md"
@@ -12,6 +12,7 @@ dependencies = [
   "geopandas>=1.0.1",
   "pandas>=2.2.3",
   "polars>=1.34.0",
+  "pyarrow>=17.0.0",
   "requests>=2.32.3",
   "tqdm>=4.67.1",
   "urllib3>=2.5.0",
@@ -29,4 +30,5 @@ dev = [
   "pynvim>=0.5.2",
   "pyperclip>=1.11.0",
   "ruff>=0.14.3",
+  "visidata>=3.3",
 ]
