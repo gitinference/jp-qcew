@@ -1,13 +1,12 @@
 import duckdb
-from tqdm import tqdm
 import polars as pl
-import requests
 import logging
+import jp_utils
 import json
 import os
 
 
-class cleanData:
+class CleanQCEW:
     def __init__(
         self,
         saving_dir: str = "data/",
@@ -145,7 +144,9 @@ class cleanData:
         -------
         it.Table
         """
-        df = self.conn.execute("SELECT * FROM qcewtable").pl()
+        df = self.conn.execute(
+            f"SELECT * FROM '{self.saving_dir}processed/pr-qcew-*.parquet';"
+        ).pl()
 
         df = df.with_columns(
             total_wages=(
