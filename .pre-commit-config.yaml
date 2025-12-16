@@ -7,3 +7,8 @@ repos:
         stages: [pre-commit]
         language: system
         entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.17  # uv version
+    hooks:
+      - id: uv-lock
+      - id: uv-export
