@@ -7,7 +7,6 @@ authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]
 requires-python = ">=3.13"
 dependencies = [
     "duckdb>=1.4.2",
-    "jp-tools>=0.3.1",
     "polars>=1.35.2",
     "pyarrow>=22.0.0",
 ]
