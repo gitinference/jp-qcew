@@ -1,1 +1,1 @@
-from data_process import 
+from .data_process import CleanQCEW

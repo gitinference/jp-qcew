@@ -145,11 +145,15 @@ class CleanQCEW:
         it.Table
         """
         df = self.conn.execute(
-            f"SELECT * FROM '{self.saving_dir}processed/pr-qcew-*.parquet';"
+            f"""
+            SELECT
+                year,qtr,first_month_employment,second_month_employment,third_month_employment,naics_code,total_wages
+                FROM '{self.saving_dir}processed/pr-qcew-*.parquet';
+            """
         ).pl()
 
         df = df.with_columns(
-            total_wages=(
+            total_employment=(
                 pl.col("first_month_employment")
                 + pl.col("second_month_employment")
                 + pl.col("third_month_employment")
@@ -164,19 +168,19 @@ class CleanQCEW:
         df = df.filter(pl.col("naics4") != "")
 
         # Group by the specified columns and aggregate
-        df = df.group_by(["year", "qtr", "first_4_naics_code"]).agg(
-            total_wages_sum=pl.col("total_wages").sum(),
-            total_employment_sum=pl.col("total_employment").mean(),
-            dummy_sum=pl.col("dummy").sum(),
+        df = df.group_by(["year", "qtr", "naics4"]).agg(
+            total_wages=pl.col("total_wages").sum(),
+            total_employment=pl.col("total_employment").mean(),
+            dummy=pl.col("dummy").sum(),
         )
 
-        df = df.filter(pl.col("dummy_sum") > 4)
+        df = df.filter(pl.col("dummy") > 4)
 
         # Step 2: Add calculated columns for contributions
         df = df.with_columns(
-            fondo_contributions=pl.col("fondo_contributions") * 0.014,
-            medicare_contributions=pl.col("medicare_contributions") * 0.0145,
-            ssn_contributions=pl.col("ssn_contributions") * 0.062,
+            fondo_contributions=pl.col("total_wages") * 0.014,
+            medicare_contributions=pl.col("total_wages") * 0.0145,
+            ssn_contributions=pl.col("total_wages") * 0.062,
         )
 
         return df

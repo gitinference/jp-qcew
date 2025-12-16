@@ -1,6 +1,6 @@
 [project]
 name = "jp-qcew"
-version = "2.2.0"
+version = "2.3.0"
 description = "A python tool to process the Censored QCEW for PR"
 readme = "README.md"
 authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]
@@ -9,6 +9,7 @@ dependencies = [
     "duckdb>=1.4.2",
     "jp-tools>=0.3.1",
     "polars>=1.35.2",
+    "pyarrow>=22.0.0",
 ]
 
 [project.scripts]
@@ -20,5 +21,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "jupyter>=1.1.1",
     "pre-commit>=4.5.0",
+    "pynvim>=0.6.0",
 ]
