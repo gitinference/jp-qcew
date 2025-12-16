@@ -1,6 +1,6 @@
 [project]
 name = "jp-qcew"
-version = "2.3.0"
+version = "2.3.1"
 description = "A python tool to process the Censored QCEW for PR"
 readme = "README.md"
 authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]

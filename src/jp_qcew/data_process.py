@@ -1,7 +1,7 @@
 import duckdb
 import polars as pl
 import logging
-import jp_tools
+import importlib.resources as resources
 import json
 import os
 
@@ -16,6 +16,7 @@ class CleanQCEW:
         self.saving_dir = saving_dir
         self.data_file = database_file
         self.conn = duckdb.connect()
+        self.dict_file = str(resources.files("jp_qcew").joinpath("decode.json"))
 
         logging.basicConfig(
             level=logging.INFO,
@@ -30,11 +31,6 @@ class CleanQCEW:
             os.makedirs(self.saving_dir + "processed")
         if not os.path.exists(self.saving_dir + "external"):
             os.makedirs(self.saving_dir + "external")
-        if not os.path.exists(f"{self.saving_dir}external/decode.json"):
-            jp_tools.download(
-                url="https://raw.githubusercontent.com/gitinference/jp-QCEW/refs/heads/main/data/external/decode.json",
-                filename=f"{self.saving_dir}external/decode.json",
-            )
 
     def make_qcew_dataset(self) -> pl.DataFrame:
         """
@@ -60,7 +56,7 @@ class CleanQCEW:
                         continue
                     df = self.clean_txt(
                         f"{self.saving_dir}qcew/{folder}/{file}",
-                        f"{self.saving_dir}external/decode.json",
+                        self.dict_file,
                     )
                     if df.is_empty():
                         logging.warning(f"File {file} is empty.")
