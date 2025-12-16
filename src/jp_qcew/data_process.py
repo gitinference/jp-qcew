@@ -1,7 +1,7 @@
 import duckdb
 import polars as pl
 import logging
-import jp_utils
+import jp_tools
 import json
 import os
 
@@ -9,7 +9,7 @@ import os
 class CleanQCEW:
     def __init__(
         self,
-        saving_dir: str = "data/",
+        saving_dir: str,
         database_file: str = "data.ddb",
         log_file: str = "data_process.log",
     ):
@@ -31,7 +31,7 @@ class CleanQCEW:
         if not os.path.exists(self.saving_dir + "external"):
             os.makedirs(self.saving_dir + "external")
         if not os.path.exists(f"{self.saving_dir}external/decode.json"):
-            self.pull_file(
+            jp_tools.download(
                 url="https://raw.githubusercontent.com/gitinference/jp-QCEW/refs/heads/main/data/external/decode.json",
                 filename=f"{self.saving_dir}external/decode.json",
             )
@@ -181,84 +181,6 @@ class CleanQCEW:
 
         return df
 
-    def unique_naics_code(self):
-        # WARNING:This is old deprecated code this should be updates
-        # TODO: update function to use duckdb
-        df_qcew = self.group_by_naics_code()
-
-        # Load the data
-        df = self.conn.table("hactable")
-
-        df = df.mutate(first_4_naics_code=df.NAICS_R02.substr(0, 4))
-
-        df = df.mutate(first_4_naics_code=(df.first_4_naics_code.cast("int64")))
-        df2 = df.join(df_qcew, predicates=("first_4_naics_code"))
-
-        return df2
-
-    def get_naics_data(self, naics_code: str) -> pl.DataFrame:
-        # WARNING:This is old deprecated code this should be updates
-        # TODO: update function to use duckdb
-        current_path = os.path.dirname(os.path.abspath(__file__))
-        base_dir = os.path.abspath(os.path.join(current_path, "..", ".."))
-
-        naics_data = pl.read_parquet(
-            f"{base_dir}/{self.saving_dir}external/naics4_df.parquet"
-        )
-        naics_desc_df = pl.read_excel(
-            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=1
-        )
-        invalid_naics_df = pl.read_excel(
-            f"{self.saving_dir}raw/naics_codes.xlsx", sheet_id=2
-        )
-
-        invalid_codes = (
-            invalid_naics_df.select(pl.col("naics_data").cast(pl.String))
-            .to_series()
-            .to_list()
-        )
-
-        naics_data = naics_data.join(
-            naics_desc_df.select(
-                [
-                    pl.col("naics_code").cast(pl.String).alias("first_4_naics_code"),
-                    "naics_desc",
-                ]
-            ),
-            on="first_4_naics_code",
-            how="left",
-        )
-        naics_data = naics_data.filter(pl.col("first_4_naics_code") != "0")
-        naics_data = naics_data.filter(
-            ~pl.col("first_4_naics_code").is_in(invalid_codes)
-        )
-
-        df_filtered = naics_data.filter(pl.col("naics_desc") == naics_code)
-        df_filtered = df_filtered.filter(pl.col("year") < 2024)
-
-        df_filtered = df_filtered.with_columns(
-            [
-                pl.format(
-                    "Q{} {}",
-                    pl.col("year"),
-                    pl.col("qtr"),
-                ).alias("x_axis")
-            ]
-        )
-        df_filtered = df_filtered.sort(["x_axis"], descending=False)
-
-        naics = (
-            (
-                naics_data.select("naics_desc")
-                .unique()
-                .sort(["naics_desc"], descending=False)
-            )
-            .to_series()
-            .to_list()
-        )
-
-        return df_filtered, naics
-
     def get_wages_data(
         self,
         time_frame: str,
@@ -344,40 +266,3 @@ class CleanQCEW:
         )
 
         return df_filtered, naics_desc
-
-    def pull_file(self, url: str, filename: str, verify: bool = True) -> None:
-        """
-        Pulls a file from a URL and saves it in the filename. Used by the class to pull external files.
-
-        Parameters
-        ----------
-        url: str
-            The URL to pull the file from.
-        filename: str
-            The filename to save the file to.
-        verify: bool
-            If True, verifies the SSL certificate. If False, does not verify the SSL certificate.
-
-        Returns
-        -------
-        None
-        """
-        chunk_size = 10 * 1024 * 1024
-
-        with requests.get(url, stream=True, verify=verify) as response:
-            total_size = int(response.headers.get("content-length", 0))
-
-            with tqdm(
-                total=total_size,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                desc="Downloading",
-            ) as bar:
-                with open(filename, "wb") as file:
-                    for chunk in response.iter_content(chunk_size=chunk_size):
-                        if chunk:
-                            file.write(chunk)
-                            bar.update(
-                                len(chunk)
-                            )  # Update the progress bar with the size of the chunks
