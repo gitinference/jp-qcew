@@ -1,8 +1,8 @@
-from src.data.data_process import cleanData
+from jp_qcew import CleanQCEW
 
 
 def main():
-    return cleanData().make_qcew_dataset()
+    return CleanQCEW(saving_dir="data/").make_qcew_dataset()
 
 
 if __name__ == "__main__":
