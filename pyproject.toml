@@ -5,22 +5,14 @@ description = "A python tool to process the Censored QCEW for PR"
 readme = "README.md"
 authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]
 requires-python = ">=3.13"
-dependencies = [
-    "duckdb>=1.4.2",
-    "polars>=1.35.2",
-    "pyarrow>=22.0.0",
-]
+dependencies = ["duckdb>=1.4.2", "polars>=1.35.2", "pyarrow>=22.0.0"]
 
 [project.scripts]
 jp-qcew = "jp_qcew:main"
 
 [build-system]
-requires = ["uv_build>=0.9.16,<0.10.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = [
-    "jupyter>=1.1.1",
-    "pre-commit>=4.5.0",
-    "pynvim>=0.6.0",
-]
+dev = ["jupyter>=1.1.1", "pre-commit>=4.5.0", "pynvim>=0.6.0"]
