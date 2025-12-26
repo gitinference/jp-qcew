@@ -62,8 +62,27 @@ class CleanQCEW:
                         logging.warning(f"File {file} is empty.")
                         continue
                     else:
+                        # Cast numeric fields
+                        df = df.with_columns(
+                            pl.col("latitude").cast(pl.Float64, strict=False),
+                            pl.col("longitude").cast(pl.Float64, strict=False),
+                            pl.col("year").cast(pl.Int64, strict=False),
+                            pl.col("qtr").cast(pl.Int64, strict=False),
+                            pl.col("first_month_employment").cast(
+                                pl.Int64, strict=False
+                            ),
+                            pl.col("second_month_employment").cast(
+                                pl.Int64, strict=False
+                            ),
+                            pl.col("third_month_employment").cast(
+                                pl.Int64, strict=False
+                            ),
+                            pl.col("total_wages").cast(pl.Int64, strict=False),
+                            pl.col("taxable_wages").cast(pl.Int64, strict=False),
+                        )
                         year = df.select(pl.col("year").mode()).item()
                         qtr = df.select(pl.col("qtr").mode()).item()
+
                         df.write_parquet(
                             file=f"{self.saving_dir}processed/pr-qcew-{year}-{qtr}.parquet"
                         )
@@ -112,19 +131,6 @@ class CleanQCEW:
                 for (start, length), col in zip(slice_tuples, column_names)
             ]
         ).drop("raw_line")
-
-        # Cast numeric fields
-        df = df.with_columns(
-            pl.col("latitude").cast(pl.Float64, strict=False),
-            pl.col("longitude").cast(pl.Float64, strict=False),
-            pl.col("year").cast(pl.Int64, strict=False),
-            pl.col("qtr").cast(pl.Int64, strict=False),
-            pl.col("first_month_employment").cast(pl.Int64, strict=False),
-            pl.col("second_month_employment").cast(pl.Int64, strict=False),
-            pl.col("third_month_employment").cast(pl.Int64, strict=False),
-            pl.col("total_wages").cast(pl.Int64, strict=False),
-            pl.col("taxable_wages").cast(pl.Int64, strict=False),
-        )
 
         return df
 
