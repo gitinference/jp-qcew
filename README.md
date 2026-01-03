@@ -102,3 +102,19 @@ This project is licensed under the [GNU General Public License v3.0](https://www
 Contributions to this tool are welcome. Please fork the repository and submit a pull request with any improvements or bug fixes.
 
 If you have any questions or need further assistance, feel free to reach out!
+
+## **Cite** 
+
+```bibtex
+@software{ouslan2026jpqcew,
+    author       = {Ouslan, Alejandro},
+    title        = {JP-QCEW},
+    month        = jan,
+    year         = 2026,
+    publisher    = {Zenodo},
+    version      = {3.0.1},
+    doi          = {10.5281/zenodo.18121581},
+    url          = {https://doi.org/10.5281/zenodo.18121581}
+}
+```
+
