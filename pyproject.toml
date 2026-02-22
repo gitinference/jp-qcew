@@ -4,7 +4,7 @@ version = "3.0.2"
 description = "A python tool to process the Censored QCEW for PR"
 readme = "README.md"
 authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = ["duckdb>=1.4.2", "polars>=1.35.2", "pyarrow>=22.0.0"]
 
 [project.scripts]
