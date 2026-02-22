@@ -1,10 +1,10 @@
 [project]
 name = "jp-qcew"
-version = "3.0.1"
+version = "3.0.2"
 description = "A python tool to process the Censored QCEW for PR"
 readme = "README.md"
 authors = [{ name = "Alejandro Ouslan", email = "alejandro.ouslan@upr.edu" }]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = ["duckdb>=1.4.2", "polars>=1.35.2", "pyarrow>=22.0.0"]
 
 [project.scripts]
@@ -15,4 +15,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["jupyter>=1.1.1", "pre-commit>=4.5.0", "pynvim>=0.6.0"]
+dev = ["jupyter>=1.1.1", "pandas>=2.3.3", "pre-commit>=4.5.0", "pynvim>=0.6.0"]
