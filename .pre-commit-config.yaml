@@ -11,5 +11,5 @@ repos:
     rev: 0.9.17  # uv version
     hooks:
       - id: uv-lock
-      - id: uv-export
-        args: [--no-dev, --all-extras, --output-file=requirements.txt]
+      - id: pip-compile
+        args: [pyproject.toml, --all-extras, --output-file=requirements.txt]
