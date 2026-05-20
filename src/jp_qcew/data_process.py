@@ -46,6 +46,8 @@ class CleanQCEW:
 
             count = 1
             year = str(folder_path)[10:14]
+            if int(year) <= 2002:
+                continue
             for file in folder_path.iterdir():
                 year_dir = self.saving_dir / "processed" / "qcew" / str(year)
                 year_dir.mkdir(parents=True, exist_ok=True)
