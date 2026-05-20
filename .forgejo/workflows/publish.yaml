@@ -1,0 +1,53 @@
+name: CI & Publish (uv)
+run-name: ${{ github.actor }} is publishing with uv
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Build-And-Publish:
+    runs-on: local
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        # This installs the standalone uv binary
+        run: curl -LsSf https://astral.sh/uv/0.11.7/install.sh | sh
+        
+      - name: Build and Publish to PyPI
+        # We ensure uv is in the path for this step
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          # 1. Build the project (creates dist/)
+          uv build
+          
+          # 2. Publish to PyPI 
+          # uv automatically uses UV_PUBLISH_TOKEN as the password with username __token__
+          uv publish
+
+      - name: Notify ntfy
+        if: always()
+        env:
+          NTFY_URL: ${{ secrets.NTFY_URL }}
+          NTFY_AUTH: ${{ secrets.NTFY_AUTH }}
+        run: |
+          if [[ "${{ job.status }}" == "success" ]]; then
+            TITLE="🚀 uv Publish: Success"
+            TAGS="rocket,package"
+          else
+            TITLE="❌ uv Publish: Failed"
+            TAGS="warning,boom"
+          fi
+
+          curl \
+            -H "Authorization: Bearer $NTFY_AUTH" \
+            -H "Title: $TITLE" \
+            -H "Tags: $TAGS" \
+            -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions" \
+            -d "Repo: ${{ github.repository }}
+          Status: ${{ job.status }}
+          Published via uv on self-hosted runner." \
+            "$NTFY_URL"
