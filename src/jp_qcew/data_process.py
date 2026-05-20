@@ -64,7 +64,12 @@ class CleanQCEW:
                         pl.col("total_wages").cast(pl.Int64, strict=False),
                         pl.col("taxable_wages").cast(pl.Int64, strict=False),
                     )
-                    df = df.with_columns(file_year=pl.lit(year), file_qtr=pl.lit(count))
+                    df = df.with_columns(
+                        file_year=pl.lit(year),
+                        file_qtr=pl.lit(count),
+                        year=pl.col("year").mode().first(),
+                        qtr=pl.col("qtr").mode().first(),
+                    )
 
                     df.write_parquet(file_path)
                     print(f"File {file} {count} has been inserted into the database.")
