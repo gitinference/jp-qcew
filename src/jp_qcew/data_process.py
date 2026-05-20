@@ -1,7 +1,6 @@
 import importlib.resources as resources
 import json
 import logging
-import os
 from pathlib import Path
 
 import duckdb
@@ -14,6 +13,29 @@ class CleanQCEW:
         saving_dir: str = "data",
         log_file: str = "data_process.log",
     ):
+        """
+        Initializes the CleanQCEW pipeline, sets up directory structures,
+        establishes an in-memory database connection, and configures logging.
+
+        Parameters
+        ----------
+        saving_dir : str, default "data"
+            The base directory path where raw, intermediate, and processed
+            QCEW artifacts are stored or cached.
+        log_file : str, default "data_process.log"
+            The filename or path where pipeline execution logs will be written.
+
+        Attributes
+        ----------
+        saving_dir : Path
+            The pathlib.Path representation of the target saving directory.
+        conn : duckdb.DuckDBPyConnection
+            An isolated, in-memory DuckDB database session used for querying
+            and aggregating data files.
+        dict_file : str
+            The absolute file path to the embedded `decode.json` schema layout,
+            resolved dynamically from the package resources.
+        """
         self.saving_dir = Path(saving_dir)
         self.conn = duckdb.connect()
         self.dict_file = str(resources.files("jp_qcew").joinpath("decode.json"))
@@ -27,7 +49,15 @@ class CleanQCEW:
 
     def make_qcew_dataset(self) -> pl.DataFrame:
         """
-        This function reads the raw data files in data/raw and inserts them into the database.
+        Processes raw QCEW text files, cleans and casts the data, saves them
+        as Parquet files partitioned by year, and returns the aggregated dataset.
+
+        This method iterates through the raw QCEW directories, skipping any data
+        from the year 2002 or earlier. For valid files, it parses the schema,
+        casts geospatial and economic columns to their proper data types, appends
+        metadata attributes, and caches them to disk. Finally, it queries all
+        processed Parquet files into a unified Polars DataFrame using the DuckDB
+        driver.
 
         Parameters
         ----------
@@ -35,7 +65,9 @@ class CleanQCEW:
 
         Returns
         -------
-        Returns a polars DataFrame containing all the inserted data
+        pl.DataFrame
+            A Polars DataFrame containing the combined historical QCEW dataset
+            selected from all processed Parquet files.
         """
 
         qcew_dir = self.saving_dir / "qcew"
@@ -85,18 +117,22 @@ class CleanQCEW:
 
     def clean_txt(self, file_path: str, decode_path: str) -> pl.DataFrame:
         """
-        This function reads the raw txt files and cleans them up based on the decode file.
+        Reads a fixed-width raw text file and parses it into a structured
+        Polars DataFrame based on a JSON layout decoder.
 
         Parameters
         ----------
-        file_path: str
-            The path to the raw txt file.
-        decode_path: str
-            The path to the decode file.
+        file_path : str
+            The path to the raw fixed-width text file.
+        decode_path : str
+            The path to the JSON decode file containing column names,
+            starting positions, and field lengths.
 
         Returns
         -------
-        pd.DataFrame
+        pl.DataFrame
+            A structured Polars DataFrame with columns stripped of surrounding
+            whitespace and parsed according to the layout specifications.
         """
 
         with open(file_path, "r", encoding="latin1") as f:
