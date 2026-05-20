@@ -1,20 +1,20 @@
-import duckdb
-import polars as pl
-import logging
 import importlib.resources as resources
 import json
+import logging
 import os
+from pathlib import Path
+
+import duckdb
+import polars as pl
 
 
 class CleanQCEW:
     def __init__(
         self,
-        saving_dir: str,
-        database_file: str = "data.ddb",
+        saving_dir: str = "data",
         log_file: str = "data_process.log",
     ):
-        self.saving_dir = saving_dir
-        self.data_file = database_file
+        self.saving_dir = Path(saving_dir)
         self.conn = duckdb.connect()
         self.dict_file = str(resources.files("jp_qcew").joinpath("decode.json"))
 
@@ -24,13 +24,6 @@ class CleanQCEW:
             datefmt="%d-%b-%y %H:%M:%S",
             filename=log_file,
         )
-        # Check if the saving directory exists
-        if not os.path.exists(self.saving_dir + "raw"):
-            os.makedirs(self.saving_dir + "raw")
-        if not os.path.exists(self.saving_dir + "processed"):
-            os.makedirs(self.saving_dir + "processed")
-        if not os.path.exists(self.saving_dir + "external"):
-            os.makedirs(self.saving_dir + "external")
 
     def make_qcew_dataset(self) -> pl.DataFrame:
         """
@@ -44,55 +37,49 @@ class CleanQCEW:
         -------
         Returns a polars DataFrame containing all the inserted data
         """
-        for folder in os.listdir(f"{self.saving_dir}qcew"):
-            count = 0
-            if folder == ".gitkeep" or folder == ".DS_Store":
-                continue
-            else:
-                for file in os.listdir(f"{self.saving_dir}qcew/{folder}"):
-                    if os.path.exists(
-                        f"{self.saving_dir}processed/pr-qcew-{folder}-{count}"
-                    ):
-                        continue
-                    df = self.clean_txt(
-                        f"{self.saving_dir}qcew/{folder}/{file}",
-                        self.dict_file,
-                    )
-                    if df.is_empty():
-                        logging.warning(f"File {file} is empty.")
-                        continue
-                    else:
-                        # Cast numeric fields
-                        df = df.with_columns(
-                            pl.col("latitude").cast(pl.Float64, strict=False),
-                            pl.col("longitude").cast(pl.Float64, strict=False),
-                            pl.col("year").cast(pl.Int64, strict=False),
-                            pl.col("qtr").cast(pl.Int64, strict=False),
-                            pl.col("first_month_employment").cast(
-                                pl.Int64, strict=False
-                            ),
-                            pl.col("second_month_employment").cast(
-                                pl.Int64, strict=False
-                            ),
-                            pl.col("third_month_employment").cast(
-                                pl.Int64, strict=False
-                            ),
-                            pl.col("total_wages").cast(pl.Int64, strict=False),
-                            pl.col("taxable_wages").cast(pl.Int64, strict=False),
-                        )
-                        year = df.select(pl.col("year").mode()).item()
-                        qtr = df.select(pl.col("qtr").mode()).item()
 
-                        df.write_parquet(
-                            file=f"{self.saving_dir}processed/pr-qcew-{year}-{qtr}.parquet"
-                        )
-                        logging.info(
-                            f"File {file} for {folder} has been inserted into the database."
-                        )
-                        count += 1
-        return self.conn.execute(
-            f"SELECT * FROM '{self.saving_dir}processed/pr-qcew-*.parquet';"
-        ).pl()
+        qcew_dir = self.saving_dir / "qcew"
+
+        for folder_path in qcew_dir.iterdir():
+            if not folder_path.is_dir():
+                continue
+
+            count = 1
+            year = str(folder_path)[10:14]
+            for file in folder_path.iterdir():
+                year_dir = self.saving_dir / "processed" / "qcew" / str(year)
+                year_dir.mkdir(parents=True, exist_ok=True)
+                file_path = year_dir / f"data-{count}.parquet"
+
+                if not file_path.exists():
+                    df = self.clean_txt(str(file), self.dict_file)
+                    df = df.with_columns(
+                        pl.col("latitude").cast(pl.Float64, strict=False),
+                        pl.col("longitude").cast(pl.Float64, strict=False),
+                        pl.col("year").cast(pl.Int64, strict=False),
+                        pl.col("qtr").cast(pl.Int64, strict=False),
+                        pl.col("first_month_employment").cast(pl.Int64, strict=False),
+                        pl.col("second_month_employment").cast(pl.Int64, strict=False),
+                        pl.col("third_month_employment").cast(pl.Int64, strict=False),
+                        pl.col("total_wages").cast(pl.Int64, strict=False),
+                        pl.col("taxable_wages").cast(pl.Int64, strict=False),
+                    )
+                    df = df.with_columns(
+                        file_year=pl.lit(year),
+                        file_qtr=pl.lit(count),
+                        year=pl.col("year").mode().first(),
+                        qtr=pl.col("qtr").mode().first(),
+                    )
+
+                    df.write_parquet(file_path)
+                    print(f"File {file} {count} has been inserted into the database.")
+                    count += 1
+                else:
+                    count += 1
+
+        search_path = self.saving_dir / "processed" / "qcew" / "**" / "data-*.parquet"
+
+        return self.conn.execute(f"SELECT * FROM '{search_path}';").pl()
 
     def clean_txt(self, file_path: str, decode_path: str) -> pl.DataFrame:
         """
@@ -146,13 +133,11 @@ class CleanQCEW:
         -------
         it.Table
         """
-        df = self.conn.execute(
-            f"""
+        df = self.conn.execute(f"""
             SELECT
                 year,qtr,first_month_employment,second_month_employment,third_month_employment,naics_code,total_wages
                 FROM '{self.saving_dir}processed/pr-qcew-*.parquet';
-            """
-        ).pl()
+            """).pl()
 
         df = df.with_columns(
             total_employment=(
