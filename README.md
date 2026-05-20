@@ -1,109 +1,134 @@
 # QCEW Data Processing Tool
 
-This tool is part of a collaboration between the University of Puerto Rico, Mayaguez, and Puerto Rico's Planning Board. Its main objective is to convert raw QCEW data into a DuckDB database with a geographic (geom) column that stores the coordinates of businesses.
+> [!IMPORTANT]
+> Project development has moved to [Codeberg](https://codeberg.org/gitinference/jp-qcew)
+
+This tool is part of a collaboration between the University of Puerto Rico, Mayaguez, and Puerto Rico's Planning Board. Its main objective is to extract, clean, and process raw Quarterly Census of Employment and Wages (QCEW) data into structured formats optimized for high-performance economic and geographic analytics.
 
 ## Overview
 
-The script takes raw Quarterly Census Employment and Wages (QCEW) data from the `data/raw` directory, processes it, and stores it in a DuckDB database. The raw data should be organized in subfolders by year (e.g., `data/raw/2002`, `data/raw/2003`), with each year folder containing the data for each quarter. The resulting database will be available in the `data` directory with a `.ddb` extension.
+The pipeline reads raw fixed-width QCEW data from the `data/qcew/` directory, processes it through an internal JSON layout schema layout, and caches intermediate tables into structured Parquet files partitioned by year.
 
-This tool also incorporates geospatial data, using latitude and longitude values to create a point geometry (`geom`) for each business, allowing for geographic queries.
+The pipeline filters out records from the year 2002 or earlier, casts critical data metrics (employment indices, total/taxable wages), handles missing geospatial parameters safely, and leverages Polars and DuckDB to yield a single, integrated dataset for downstream workflows.
+
+---
 
 ## Requirements
 
 To run this tool, you will need the following Python packages:
 
-- `ibis`
 - `duckdb`
 - `polars`
 - `geopandas`
-- `tqdm`
-- `requests`
-- `json`
-- `logging`
 - `pandas`
+- `tqdm`
+- `logging`
 
-You can install the necessary dependencies using:
+You can install the dependencies via `pip`:
 
 ```bash
 pip install -r requirements.txt
-```
-
-Or utilize the `uv` to ensure compatibility
 
 ```
+
+Or utilize `uv` to lock and sync your environment instantly:
+
+```bash
 uv sync
+
 ```
+
+---
 
 ## File Structure
 
-The data should be organized in the following structure:
+The workspace expects files to be organized in the following directory layout:
 
 ```
 data/
-├── raw/
-│   ├── 2002/
+├── qcew/
 │   ├── 2003/
+│   │   ├── qcew_file_q1.txt
+│   │   └── ...
+│   ├── 2004/
 │   └── ...
-├── processed/
-├── external/
-│   └── decode.json
-└── data.ddb
+└── processed/
+    └── qcew/
+        ├── 2003/
+        │   ├── data-1.parquet
+        │   └── ...
+        └── 2004/
+
 ```
 
-- **`data/raw/`**: This directory contains the raw QCEW data, organized by year and quarter.
-- **`data/processed/`**: This directory is for storing processed data.
-- **`data/external/`**: This directory contains external files, including `decode.json`, which is required for decoding the raw data files.
-- **`data.ddb`**: The output DuckDB database containing the processed data.
+- **`data/qcew/`**: Contains raw text data subfolders partitioned by year. **Note:** Folders with a year value $\le$ 2002 are automatically skipped by the processing architecture.
+- **`data/processed/qcew/{year}/`**: Automatically generated storage location containing clean, structured data chunks saved as individual compressed `.parquet` files.
+
+---
 
 ## How It Works
 
-1. **Initialization**: The script checks for necessary directories (raw, processed, external) and creates them if they don't exist. It also downloads external files, such as `decode.json`, if not already present. This file holds the Census codification of the data.
+### 1. Initialization
 
-2. **Data Processing**:
-   - The tool reads raw data files, cleans them, and extracts relevant fields based on predefined column widths defined in `decode.json`.
-   - The cleaned data includes geographic coordinates (latitude and longitude), which are then transformed into a `geom` column of type `Point`.
-   - This processed data is inserted into a DuckDB database.
+The class (`CleanQCEW`) initializes tracking to your storage path, initializes an isolated in-memory `duckdb` connection session, configures runtime logging, and references the system's package-embedded `decode.json` structural layout via standard library resources.
 
-3. **Group and Aggregate Data**:
-   - The data is grouped by `NAICS` code (4-digit), year, and quarter, aggregating information such as total wages and total employment.
-   - Additional calculations are performed for contributions to the social security, Medicare, and other funds.
+### 2. Fast Fixed-Width Parsing
 
-4. **Joining with External Data**:
-   - The tool also allows for joining the QCEW data with external data (e.g., `hactable`) based on `NAICS` codes, facilitating further analysis.
+Raw textual inputs are streamed directly into Polars string blocks using multi-threaded null-byte delimiting, which cuts down overhead compared to standard Python line reading. Using the configuration from `decode.json`, fields are accurately sliced, cropped of padded spaces, and named.
+
+### 3. Data Transformation & Alignment
+
+- Columns representing geographical points (`latitude`, `longitude`), indices (`year`, `qtr`), and monetary metrics (`total_wages`, `taxable_wages`, monthly employment statistics) are cast to optimized types (`Float64` / `Int64`) safely without throwing schema exceptions.
+- Metadata attributes (`file_year`, `file_qtr`) are appended natively before individual files are written out to target Parquet archives on disk.
+
+### 4. Aggregation and Return
+
+The tool uses an underlying DuckDB instance to query the full tree map of parquet files across all years in parallel, converting the aggregated database response directly into an in-memory `pl.DataFrame`.
+
+---
 
 ## Key Functions
 
-- **`make_qcew_dataset`**: Processes all the raw QCEW data and inserts it into the DuckDB database.
-- **`clean_txt`**: Cleans and formats the raw text data, extracting relevant fields and generating geographic information.
-- **`group_by_naics_code`**: Groups data by `NAICS` code and aggregates the total wages and employment.
-- **`unique_naics_code`**: Joins the grouped QCEW data with external data based on the `NAICS` code.
-- **`pull_file`**: Downloads external files from a given URL (e.g., `decode.json`).
+- **`__init__`**: Sets up pipeline directory mappings, spawns the central connection instance, and loads internal schema rules.
+- **`make_qcew_dataset`**: Scans the input directories, runs the validation checks, manages chunk-saving states, and returns the final unified dataset.
+- **`clean_txt`**: Performs raw text ingestion and extracts relevant structural fields based on layout specification boundaries.
+
+---
 
 ## Usage
 
-1. Organize your raw QCEW data by year and quarter in the `data/raw/` folder.
-2. Ensure that `decode.json` is in the `data/external/` folder.
-3. Run the script to process the data:
+1. Organize your raw data folders inside your local storage folder (default: `data/qcew/`).
+2. Run your pipeline orchestration module:
 
 ```bash
 python main.py
+
 ```
+
+---
 
 ## Logging
 
-The script logs key events and warnings to a file called `data_process.log`. This includes information about successfully processed files, warnings for empty files, and other runtime details.
+Operational timelines, warning updates, and operational status parameters are automatically streamed into a file called `data_process.log` formatted with active millisecond execution timestamps:
+
+```text
+20-May-26 07:45:12 - INFO - File data/qcew/2003/raw_data.txt 1 has been inserted into the database.
+
+```
+
+---
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). See the [LICENSE](https://www.google.com/search?q=LICENSE) file for more details.
 
 ## Contributing
 
-Contributions to this tool are welcome. Please fork the repository and submit a pull request with any improvements or bug fixes.
+Contributions to this tool are welcome. Please fork the repository and submit a pull request with any improvements or bug fixes on Codeberg.
 
-If you have any questions or need further assistance, feel free to reach out!
+---
 
-## **Cite** 
+## Cite
 
 ```bibtex
 @software{ouslan2026jpqcew,
@@ -116,5 +141,5 @@ If you have any questions or need further assistance, feel free to reach out!
     doi          = {10.5281/zenodo.18121581},
     url          = {https://doi.org/10.5281/zenodo.18121581}
 }
-```
 
+```
